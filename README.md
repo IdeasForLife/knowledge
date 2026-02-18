@@ -39,6 +39,22 @@
 
 ---
 
+## 🖼️ 界面预览
+
+### 智能问答界面
+
+<img src="./img.png" alt="智能问答" width="800"/>
+
+### 领域文档管理
+
+<img src="./img_1.png" alt="领域文档" width="800"/>
+
+### Qdrant 管理界面
+
+<img src="./img_2.png" alt="Qdrant管理" width="800"/>
+
+---
+
 ## 🚀 快速开始
 
 ### 前置要求
