@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qdrant管理 - 知识库</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .nav {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-icon {
+            font-size: 28px;
+        }
+
+        .nav h1 {
+            font-size: 1.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 800;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 8px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #555;
+            font-weight: 600;
+            padding: 10px 20px;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .nav-links a:hover {
+            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+            color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .nav-links a.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .refresh-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .refresh-btn:hover {
+            background: #5568d3;
+        }
+
+        .collection-list {
+            display: grid;
+            gap: 15px;
+        }
+
+        .collection-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            border-left: 4px solid #667eea;
+            transition: all 0.3s;
+        }
+
+        .collection-item:hover {
+            background: #f0f1f2;
+            transform: translateX(5px);
+        }
+
+        .collection-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .collection-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .delete-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .delete-btn:hover {
+            background: #c82333;
+        }
+
+        .collection-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .info-item {
+            background: white;
+            padding: 12px;
+            border-radius: 6px;
+        }
+
+        .info-label {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .empty-text {
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border-left: 4px solid #ffc107;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .confirm-dialog {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .confirm-dialog.show {
+            display: flex;
+        }
+
+        .dialog-content {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .dialog-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .dialog-message {
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .dialog-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+            border: none;
+        }
+
+        .btn-cancel {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-cancel:hover {
+            background: #5a6268;
+        }
+
+        .btn-confirm {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-confirm:hover {
+            background: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="nav">
+            <div class="nav-left">
+                <span class="nav-icon">✨</span>
+                <h1>智能知识库</h1>
+            </div>
+            <div class="nav-links">
+                <a href="upload.html">📄 文件上传</a>
+                <a href="chat.html">💬 智能问答</a>
+                <a href="domain.html">📚 领域文档</a>
+                <a href="qdrant.html" class="active">🗂️ Qdrant管理</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>
+                Qdrant集合管理
+                <button class="refresh-btn" onclick="loadCollections()">🔄 刷新</button>
+            </h2>
+
+            <div id="alert" class="alert"></div>
+
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <p style="margin-top: 10px; color: #666;">加载中...</p>
+            </div>
+
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <div class="empty-icon">📦</div>
+                <div class="empty-text">暂无集合</div>
+            </div>
+
+            <div id="collectionList" class="collection-list"></div>
+        </div>
+    </div>
+
+    <!-- 确认对话框 -->
+    <div id="confirmDialog" class="confirm-dialog">
+        <div class="dialog-content">
+            <div class="dialog-title">⚠️ 确认删除</div>
+            <div class="dialog-message">
+                确定要删除集合 <strong id="collectionName"></strong> 吗？<br>
+                此操作不可恢复，所有向量数据将被删除！
+            </div>
+            <div class="dialog-buttons">
+                <button class="btn btn-cancel" onclick="closeDialog()">取消</button>
+                <button class="btn btn-confirm" onclick="confirmDelete()">确认删除</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let collectionToDelete = null;
+
+        // 页面加载时获取集合列表
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCollections();
+        });
+
+        // 加载集合列表
+        async function loadCollections() {
+            const alert = document.getElementById('alert');
+            const loading = document.getElementById('loading');
+            const emptyState = document.getElementById('emptyState');
+            const collectionList = document.getElementById('collectionList');
+
+            loading.style.display = 'block';
+            alert.className = 'alert';
+            emptyState.style.display = 'none';
+            collectionList.innerHTML = '';
+
+            try {
+                const response = await fetch('/api/qdrant/collections');
+                const result = await response.json();
+
+                if (result.success && result.collections.length > 0) {
+                    loading.style.display = 'none';
+
+                    result.collections.forEach(collection => {
+                        const item = createCollectionItem(collection);
+                        collectionList.appendChild(item);
+                    });
+                } else {
+                    loading.style.display = 'none';
+                    emptyState.style.display = 'block';
+                }
+
+            } catch (error) {
+                loading.style.display = 'none';
+                showError('获取集合列表失败: ' + error.message);
+            }
+        }
+
+        // 创建集合卡片
+        function createCollectionItem(collection) {
+            const div = document.createElement('div');
+            div.className = 'collection-item';
+            div.innerHTML = `
+                <div class="collection-header">
+                    <div class="collection-name">📦 ${collection.name}</div>
+                    <button class="delete-btn" onclick="showDeleteDialog('${collection.name}')">🗑️ 删除</button>
+                </div>
+                <div class="collection-info">
+                    <div class="info-item">
+                        <div class="info-label">向量维度</div>
+                        <div class="info-value">${collection.vectorSize}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">距离度量</div>
+                        <div class="info-value">${collection.distance}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">向量数量</div>
+                        <div class="info-value">${formatNumber(collection.pointsCount)}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">分段数量</div>
+                        <div class="info-value">${formatNumber(collection.segmentsCount)}</div>
+                    </div>
+                </div>
+            `;
+            return div;
+        }
+
+        // 格式化数字
+        function formatNumber(num) {
+            if (!num) return '0';
+            return Number(num).toLocaleString();
+        }
+
+        // 显示删除确认对话框
+        function showDeleteDialog(collectionName) {
+            collectionToDelete = collectionName;
+            document.getElementById('collectionName').textContent = collectionName;
+            document.getElementById('confirmDialog').classList.add('show');
+        }
+
+        // 关闭对话框
+        function closeDialog() {
+            document.getElementById('confirmDialog').classList.remove('show');
+            collectionToDelete = null;
+        }
+
+        // 确认删除
+        async function confirmDelete() {
+            if (!collectionToDelete) return;
+
+            closeDialog();
+            const alert = document.getElementById('alert');
+
+            try {
+                const response = await fetch(`/api/qdrant/collections/${collectionToDelete}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showSuccess(result.message);
+                    loadCollections(); // 刷新列表
+                } else {
+                    showError(result.message);
+                }
+
+            } catch (error) {
+                showError('删除集合失败: ' + error.message);
+            }
+        }
+
+        // 显示成功消息
+        function showSuccess(message) {
+            const alert = document.getElementById('alert');
+            alert.textContent = message;
+            alert.className = 'alert alert-success show';
+            setTimeout(() => alert.className = 'alert', 3000);
+        }
+
+        // 显示错误消息
+        function showError(message) {
+            const alert = document.getElementById('alert');
+            alert.textContent = message;
+            alert.className = 'alert alert-error show';
+        }
+
+        // 点击对话框外部关闭
+        document.getElementById('confirmDialog').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDialog();
+            }
+        });
+    </script>
+</body>
+</html>

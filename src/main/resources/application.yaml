@@ -1,3 +1,54 @@
 spring:
   application:
     name: knowledge
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+  web:
+    resources:
+      static-locations: classpath:/static/
+  jpa:
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+  datasource:
+    url: jdbc:sqlite:knowledge.db
+    driver-class-name: org.sqlite.JDBC
+  main:
+    allow-bean-definition-overriding: true
+
+# SQLite配置
+sqlite:
+  url: jdbc:sqlite:knowledge.db
+
+# Ollama配置
+ollama:
+  base-url: http://localhost:11434
+  chat-model: qwen2.5:7b
+  embedding-model: qwen3-embedding:0.6b
+  timeout: 120s
+
+# Qdrant配置
+qdrant:
+  host: localhost
+  port: 6334
+  http-port: 6333
+  collection-name: knowledge-base
+  vector-size: 1024
+  create-collection-if-not-exists: true
+
+# RAG配置
+rag:
+  chunk-size: 500
+  chunk-overlap: 50
+  max-results: 5
+  min-score: 0.5
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.mark.knowledge: DEBUG
+    dev.langchain4j: DEBUG

@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>领域文档管理 - 智能知识库</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .nav {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-icon {
+            font-size: 28px;
+        }
+
+        .nav h1 {
+            font-size: 1.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 800;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 8px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #555;
+            font-weight: 600;
+            padding: 10px 20px;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .nav-links a:hover {
+            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+            color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .nav-links a.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 420px 1fr;
+            gap: 25px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .card-icon {
+            font-size: 24px;
+        }
+
+        .card h2 {
+            font-size: 1.3rem;
+            color: #333;
+            font-weight: 700;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            color: #444;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e8e8e8;
+            border-radius: 12px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            background: #fafafa;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group textarea {
+            min-height: 180px;
+            resize: vertical;
+            line-height: 1.6;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .submit-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-bar select,
+        .filter-bar button {
+            padding: 10px 18px;
+            border: 2px solid #e8e8e8;
+            background: white;
+            border-radius: 10px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-bar select:hover,
+        .filter-bar button:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .filter-bar button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            font-weight: 600;
+        }
+
+        .document-list {
+            display: grid;
+            gap: 15px;
+        }
+
+        .document-item {
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            border-radius: 14px;
+            padding: 22px;
+            border-left: 4px solid #667eea;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .document-item:hover {
+            background: white;
+            transform: translateX(5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .document-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 14px;
+        }
+
+        .document-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #222;
+            margin-bottom: 8px;
+        }
+
+        .document-domain {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        .document-meta {
+            display: flex;
+            gap: 20px;
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .document-meta span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .status-badge {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .status-pending {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
+            color: #856404;
+        }
+
+        .status-processing {
+            background: linear-gradient(135deg, #cce5ff 0%, #a3d5ff 100%);
+            color: #004085;
+        }
+
+        .status-success {
+            background: linear-gradient(135deg, #d4edda 0%, #b8e6cc 100%);
+            color: #155724;
+        }
+
+        .status-failed {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            color: #721c24;
+        }
+
+        .error-message {
+            color: #dc3545;
+            font-size: 13px;
+            margin-top: 10px;
+            padding: 10px;
+            background: #fee;
+            border-radius: 8px;
+            border-left: 3px solid #dc3545;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #f0f0f0;
+        }
+
+        .pagination button {
+            padding: 10px 20px;
+            border: 2px solid #e8e8e8;
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            border-color: #667eea;
+            color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .pagination button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .pagination .page-info {
+            color: #666;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .stat-item {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 14px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            opacity: 0.95;
+            font-weight: 500;
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .nav-links {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="nav">
+            <div class="nav-left">
+                <span class="nav-icon">✨</span>
+                <h1>智能知识库</h1>
+            </div>
+            <div class="nav-links">
+                <a href="upload.html">📄 文件上传</a>
+                <a href="chat.html">💬 智能问答</a>
+                <a href="domain.html" class="active">📚 领域文档</a>
+                <a href="qdrant.html">🗂️ Qdrant管理</a>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-icon">✏️</span>
+                    <h2>添加领域文档</h2>
+                </div>
+                <form id="domainForm">
+                    <div class="form-group">
+                        <label for="domain">📚 领域名称 *</label>
+                        <select id="domain" name="domain" required>
+                            <option value="">选择领域...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="title">📝 标题 *</label>
+                        <input type="text" id="title" name="title" placeholder="输入文档标题" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="source">🔗 来源</label>
+                        <input type="text" id="source" name="source" placeholder="输入文档来源（可选）">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="content">📄 文档内容 *</label>
+                        <textarea id="content" name="content" placeholder="输入文档内容..." required></textarea>
+                    </div>
+
+                    <button type="submit" class="submit-btn" id="submitBtn">🚀 提交文档</button>
+                </form>
+
+                <div class="stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalDocs">0</div>
+                        <div class="stat-label">总文档数</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="processingDocs">0</div>
+                        <div class="stat-label">处理中</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="successDocs">0</div>
+                        <div class="stat-label">已完成</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-icon">📋</span>
+                    <h2>文档列表</h2>
+                </div>
+
+                <div class="filter-bar">
+                    <select id="filterDomain">
+                        <option value="">所有领域</option>
+                    </select>
+                    <select id="filterStatus">
+                        <option value="">所有状态</option>
+                        <option value="pending">等待中</option>
+                        <option value="processing">处理中</option>
+                        <option value="success">成功</option>
+                        <option value="failed">失败</option>
+                    </select>
+                    <button onclick="loadDocuments()">🔄 刷新</button>
+                </div>
+
+                <div class="document-list" id="documentList"></div>
+
+                <div class="pagination" id="pagination"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPage = 0;
+        let pageSize = 10;
+        let currentDomain = '';
+        let currentStatus = '';
+        let domainEnums = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDomainEnums();
+            loadDomains();
+            loadDocuments();
+            
+            setInterval(() => loadDocuments(false), 30000);
+        });
+
+        async function loadDomainEnums() {
+            try {
+                const response = await fetch('/api/domain/domain-enums');
+                domainEnums = await response.json();
+
+                const domainSelect = document.getElementById('domain');
+                domainSelect.innerHTML = '<option value="">选择领域...</option>';
+                
+                domainEnums.forEach(d => {
+                    const option = document.createElement('option');
+                    option.value = d.name;
+                    option.textContent = d.displayName;
+                    domainSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('加载领域枚举失败:', error);
+            }
+        }
+
+        document.getElementById('domainForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = '⏳ 提交中...';
+
+            const domainName = document.getElementById('domain').value;
+            const domainEnum = domainEnums.find(d => d.name === domainName);
+
+            const formData = {
+                domain: domainEnum ? domainEnum.name : 'OTHER',
+                title: document.getElementById('title').value,
+                source: document.getElementById('source').value || '未知来源',
+                content: document.getElementById('content').value
+            };
+
+            try {
+                const response = await fetch('/api/domain/upload', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert('✅ 文档已提交，正在后台处理中！');
+                    document.getElementById('domainForm').reset();
+                    loadDocuments();
+                } else {
+                    alert('❌ 提交失败: ' + result.message);
+                }
+            } catch (error) {
+                alert('❌ 提交失败: ' + error.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🚀 提交文档';
+            }
+        });
+
+        async function loadDomains() {
+            try {
+                const response = await fetch('/api/domain/domains');
+                const domains = await response.json();
+
+                const filterDomain = document.getElementById('filterDomain');
+                filterDomain.innerHTML = '<option value="">所有领域</option>';
+                
+                domains.forEach(domain => {
+                    const option = document.createElement('option');
+                    option.value = domain;
+                    option.textContent = domain;
+                    filterDomain.appendChild(option);
+                });
+
+                filterDomain.addEventListener('change', (e) => {
+                    currentDomain = e.target.value;
+                    currentPage = 0;
+                    loadDocuments();
+                });
+
+                document.getElementById('filterStatus').addEventListener('change', (e) => {
+                    currentStatus = e.target.value;
+                    currentPage = 0;
+                    loadDocuments();
+                });
+
+            } catch (error) {
+                console.error('加载领域列表失败:', error);
+            }
+        }
+
+        async function loadDocuments(resetPage = true) {
+            if (resetPage) currentPage = 0;
+
+            try {
+                let url = `/api/domain/documents?page=${currentPage}&size=${pageSize}&sortBy=createdAt&sortDir=desc`;
+                
+                if (currentDomain) url += `&domain=${encodeURIComponent(currentDomain)}`;
+                if (currentStatus) url += `&status=${currentStatus}`;
+
+                const response = await fetch(url);
+                const data = await response.json();
+
+                renderDocuments(data.content);
+                renderPagination(data);
+                updateStats(data);
+
+            } catch (error) {
+                console.error('加载文档列表失败:', error);
+            }
+        }
+
+        function renderDocuments(documents) {
+            const list = document.getElementById('documentList');
+
+            if (documents.length === 0) {
+                list.innerHTML = '<div style="text-align: center; color: #999; padding: 60px 20px; font-size: 16px;">📭 暂无文档</div>';
+                return;
+            }
+
+            list.innerHTML = documents.map(doc => `
+                <div class="document-item">
+                    <div class="document-header">
+                        <div>
+                            <div class="document-title">${escapeHtml(doc.title)}</div>
+                            <span class="document-domain">${escapeHtml(doc.domain)}</span>
+                        </div>
+                        <span class="status-badge status-${doc.status}">
+                            ${getStatusText(doc.status)}
+                        </span>
+                    </div>
+                    <div class="document-meta">
+                        <span>🔗 ${escapeHtml(doc.source)}</span>
+                        <span>📊 ${doc.vectorCount || 0} 个向量</span>
+                        <span>🕐 ${formatDate(doc.createdAt)}</span>
+                    </div>
+                    ${doc.errorMessage ? `<div class="error-message">❌ ${escapeHtml(doc.errorMessage)}</div>` : ''}
+                    ${doc.status === 'success' ? `<div style="color: #28a745; font-size: 13px; margin-top: 8px;">✓ 处理完成</div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function renderPagination(data) {
+            const pagination = document.getElementById('pagination');
+            const totalPages = data.totalPages;
+
+            if (totalPages <= 1) {
+                pagination.innerHTML = '';
+                return;
+            }
+
+            pagination.innerHTML = `
+                <button onclick="goToPage(${currentPage - 1})" ${currentPage === 0 ? 'disabled' : ''}>⬅️ 上一页</button>
+                <span class="page-info">第 ${currentPage + 1} / ${totalPages} 页（共 ${data.totalElements} 条）</span>
+                <button onclick="goToPage(${currentPage + 1})" ${currentPage >= totalPages - 1 ? 'disabled' : ''}>下一页 ➡️</button>
+            `;
+        }
+
+        function goToPage(page) {
+            currentPage = page;
+            loadDocuments(false);
+        }
+
+        function updateStats(data) {
+            document.getElementById('totalDocs').textContent = data.totalElements;
+        }
+
+        function getStatusText(status) {
+            const statusMap = {
+                'pending': '⏳ 等待中',
+                'processing': '⚙️ 处理中',
+                'success': '✅ 成功',
+                'failed': '❌ 失败'
+            };
+            return statusMap[status] || status;
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleString('zh-CN');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

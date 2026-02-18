@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Knowledge Base</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: #555;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        input[type="file"],
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="file"]:focus,
+        input[type="text"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .response {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .response h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .response p {
+            color: #555;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .sources {
+            margin-top: 20px;
+        }
+
+        .source-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .source-item .filename {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .source-item .excerpt {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .source-item .score {
+            color: #999;
+            font-size: 0.8rem;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .success {
+            background: #efe;
+            color: #3c3;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>RAG Knowledge Base</h1>
+            <p>使用本地 Ollama + Qdrant 的知识库问答系统</p>
+        </div>
+
+        <div class="card">
+            <h2>上传文档</h2>
+            <div class="form-group">
+                <label for="fileInput">选择文件 (PDF 或 TXT)</label>
+                <input type="file" id="fileInput" accept=".pdf,.txt">
+            </div>
+            <button onclick="uploadDocument()">上传文档</button>
+            <div id="uploadStatus"></div>
+        </div>
+
+        <div class="card">
+            <h2>提问</h2>
+            <div class="form-group">
+                <label for="questionInput">问题</label>
+                <textarea id="questionInput" placeholder="请输入您的问题..."></textarea>
+            </div>
+            <button onclick="askQuestion()">提问</button>
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p style="margin-top: 10px; color: #666;">正在处理...</p>
+            </div>
+            <div id="response"></div>
+        </div>
+    </div>
+
+    <script>
+        async function uploadDocument() {
+            const fileInput = document.getElementById('fileInput');
+            const statusDiv = document.getElementById('uploadStatus');
+
+            if (!fileInput.files.length) {
+                statusDiv.innerHTML = '<div class="error">请选择文件</div>';
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+
+            statusDiv.innerHTML = '<div class="loading active"><div class="spinner"></div></div>';
+
+            try {
+                const response = await fetch('/api/documents/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    statusDiv.innerHTML = `<div class="success">
+                        文档上传成功！<br>
+                        文件名: ${result.filename}<br>
+                        处理片段数: ${result.segmentCount}
+                    </div>`;
+                } else {
+                    statusDiv.innerHTML = `<div class="error">上传失败: ${result.message || '未知错误'}</div>`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="error">上传失败: ${error.message}</div>`;
+            }
+        }
+
+        async function askQuestion() {
+            const questionInput = document.getElementById('questionInput');
+            const responseDiv = document.getElementById('response');
+            const loadingDiv = document.getElementById('loading');
+
+            const question = questionInput.value.trim();
+            if (!question) {
+                responseDiv.innerHTML = '<div class="error">请输入问题</div>';
+                return;
+            }
+
+            loadingDiv.classList.add('active');
+            responseDiv.innerHTML = '';
+
+            try {
+                const response = await fetch('/api/rag/ask', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        question: question,
+                        conversationId: null,
+                        maxResults: 5
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    let html = `
+                        <div class="response">
+                            <h3>回答</h3>
+                            <p>${result.answer}</p>
+                            ${result.sources && result.sources.length > 0 ? `
+                                <div class="sources">
+                                    <h3>参考来源</h3>
+                                    ${result.sources.map(source => `
+                                        <div class="source-item">
+                                            <div class="filename">📄 ${source.filename}</div>
+                                            <div class="excerpt">${source.excerpt.substring(0, 200)}...</div>
+                                            <div class="score">相关度: ${(source.relevanceScore * 100).toFixed(1)}%</div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                    responseDiv.innerHTML = html;
+                } else {
+                    responseDiv.innerHTML = `<div class="error">请求失败: ${result.message || '未知错误'}</div>`;
+                }
+            } catch (error) {
+                responseDiv.innerHTML = `<div class="error">请求失败: ${error.message}</div>`;
+            } finally {
+                loadingDiv.classList.remove('active');
+            }
+        }
+
+        // 允许按 Enter 键提交问题 (Ctrl+Enter)
+        document.getElementById('questionInput').addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                askQuestion();
+            }
+        });
+    </script>
+</body>
+</html>
