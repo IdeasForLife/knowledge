@@ -66,7 +66,7 @@
 
 ### 安装运行
 
-\`\`\`bash
+```bash
 # 1. 启动 Ollama 并拉取模型
 ollama serve
 ollama pull qwen2.5:7b
@@ -80,7 +80,7 @@ mvn spring-boot:run
 
 # 4. 访问系统
 open http://localhost:8080
-\`\`\`
+```
 
 ---
 
@@ -88,7 +88,7 @@ open http://localhost:8080
 
 ### 领域文档上传
 
-\`\`\`bash
+```bash
 curl -X POST http://localhost:8080/api/domain/upload \
   -H "Content-Type: application/json" \
   -d '{
@@ -96,15 +96,15 @@ curl -X POST http://localhost:8080/api/domain/upload \
     "title": "AI基础",
     "content": "..."
   }'
-\`\`\`
+```
 
 ### 智能问答（流式）
 
-\`\`\`bash
+```bash
 curl -X POST http://localhost:8080/api/chat/stream \
   -H "Content-Type: application/json" \
   -d '{"question": "什么是AI？"}'
-\`\`\`
+```
 
 ---
 
@@ -112,7 +112,7 @@ curl -X POST http://localhost:8080/api/chat/stream \
 
 ### application.yaml 关键配置
 
-\`\`\`yaml
+```yaml
 ollama:
   base-url: http://localhost:11434
   chat-model: qwen2.5:7b
@@ -126,13 +126,13 @@ rag:
   chunk-size: 500
   max-results: 5
   min-score: 0.5
-\`\`\`
+```
 
 ---
 
 ## 📁 项目结构
 
-\`\`\`
+```
 src/main/java/com/mark/knowledge/
 ├── KnowledgeApplication.java
 ├── chat/              # 聊天模块
@@ -144,7 +144,7 @@ src/main/java/com/mark/knowledge/
 │   ├── repository/   # Repository
 │   └── service/      # 服务
 └── config/           # 全局配置
-\`\`\`
+```
 
 ---
 
@@ -156,7 +156,8 @@ src/main/java/com/mark/knowledge/
 - 🗂️ qdrant.html - Qdrant管理
 
 ---
-
+## 示例
+文件上传上传了三国演义里面部分用来测试，见：/resources/三国演义34章.txt，可以用来本地测试。
 ## ❓ 常见问题
 
 详见完整文档...
