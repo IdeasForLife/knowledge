@@ -9,6 +9,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Sinks;
 
 import java.util.List;
 
@@ -40,33 +41,41 @@ public class ChatController {
 
         log.info("收到流式聊天请求: question='{}', conversationId={}", request.question(), request.conversationId());
 
-        return Flux.create(sink -> {
-            chatService.chatAsync(
-                request.question(),
-                request.conversationId(),
-                // onChunk - 每收到一个token就发送
-                chunk -> {
-                    sink.next(ServerSentEvent.<String>builder()
-                        .data(chunk)
+        // 使用 Sinks 处理跨线程的 SSE 发送
+        Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().multicast().onBackpressureBuffer();
+
+        // 在异步线程中处理
+        chatService.chatAsync(
+            request.question(),
+            request.conversationId(),
+            // onChunk
+            chunk -> {
+                log.debug("发送消息块: {}", chunk);
+                Sinks.EmitResult result = sink.tryEmitNext(ServerSentEvent.<String>builder()
                         .event("message")
+                        .data(chunk)
                         .build());
-                },
-                // onComplete - 完成时发送会话ID
-                finalConversationId -> {
-                    sink.next(ServerSentEvent.<String>builder()
-                        .data(finalConversationId)
-                        .event("done")
-                        .build());
-                    sink.complete();
-                    log.info("对话流式响应完成: {}", finalConversationId);
-                },
-                // onError - 错误处理
-                error -> {
-                    log.error("Stream chat error", error);
-                    sink.error(error);
+                if (result != Sinks.EmitResult.OK) {
+                    log.warn("发送消息块失败: {}", result);
                 }
-            );
-        });
+            },
+            // onComplete
+            finalConversationId -> {
+                log.info("对话完成, conversationId={}", finalConversationId);
+                sink.tryEmitNext(ServerSentEvent.<String>builder()
+                        .event("done")
+                        .data(finalConversationId)
+                        .build());
+                sink.tryEmitComplete();
+            },
+            // onError
+            error -> {
+                log.error("Stream chat error", error);
+                sink.tryEmitError(error);
+            }
+        );
+
+        return sink.asFlux();
     }
 
     /**

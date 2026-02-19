@@ -46,6 +46,25 @@ rag:
   max-results: 5
   min-score: 0.5
 
+# Agent配置
+agent:
+  # 上下文滑动窗口大小（保留最近N条消息）
+  context-window-size: 10
+  # 是否启用向量数据库查询
+  vector-store-enabled: true
+  # 是否启用 MCP 文件操作
+  mcp-file-enabled: true
+  # 是否启用工具调用
+  tool-call-enabled: true
+  # 向量数据库最大结果数
+  vector-max-results: 5
+  # 向量数据库最小相似度分数
+  vector-min-score: 0.5
+  # MCP 允许访问的目录
+  mcp-allowed-directory: ${user.dir}
+  # Agent 执行超时时间（秒）
+  agent-timeout-seconds: 120
+
 # 日志配置
 logging:
   level:

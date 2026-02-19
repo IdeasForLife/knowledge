@@ -1,0 +1,1508 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能体对话 - Agent Chat</title>
+
+    <!-- KaTeX CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .nav {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            padding: 15px 25px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-icon {
+            font-size: 26px;
+        }
+
+        .nav h1 {
+            font-size: 1.3rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 800;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 6px;
+        }
+
+        .nav-links a {
+            margin-left: 8px;
+            text-decoration: none;
+            color: #555;
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .nav-links a:hover {
+            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+            color: #667eea;
+            transform: translateY(-1px);
+        }
+
+        .nav-links a.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 3px 12px rgba(102, 126, 234, 0.35);
+        }
+
+        .chat-container {
+            display: flex;
+            flex: 1;
+            max-width: 1600px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .sidebar-header h2 {
+            font-size: 1.1rem;
+            color: #333;
+        }
+
+        .new-chat-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .new-chat-btn:hover {
+            background: #5568d3;
+        }
+
+        .conversation-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .conversation-item {
+            padding: 12px 35px 12px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-bottom: 5px;
+            position: relative;
+        }
+
+        .conversation-item:hover {
+            background: #f0f0f0;
+        }
+
+        .conversation-item:hover .conversation-delete-btn {
+            display: block;
+        }
+
+        .conversation-item.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .conversation-item.active .conversation-delete-btn {
+            color: white;
+        }
+
+        .conversation-item.active .conversation-delete-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .conversation-title {
+            font-size: 14px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: #333;
+        }
+
+        .conversation-item.active .conversation-title {
+            color: white;
+        }
+
+        .conversation-delete-btn {
+            display: none;
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            padding: 2px 6px;
+            border: none;
+            background: rgba(240, 240, 240, 0.9);
+            color: #666;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 4px;
+            line-height: 1;
+            transition: all 0.2s;
+            z-index: 10;
+        }
+
+        .conversation-delete-btn:hover {
+            background: #dc3545;
+            color: white;
+        }
+
+        .main-chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .chat-panel {
+            flex: 1;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-header h2 {
+            font-size: 1.2rem;
+            color: #333;
+        }
+
+        .chat-options {
+            display: flex;
+            gap: 15px;
+        }
+
+        .chat-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #555;
+        }
+
+        .chat-option input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .message {
+            display: flex;
+            gap: 12px;
+            max-width: 80%;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .message.user .message-avatar {
+            display: none;
+        }
+
+        .message.assistant {
+            align-self: flex-start;
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .message.assistant .message-avatar {
+            background: white;
+            border: 2px solid #e0e7ff;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+        }
+
+        .message-content {
+            background: #f0f0f0;
+            padding: 12px 16px;
+            border-radius: 12px;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .message.user .message-content {
+            background: #667eea;
+            color: white;
+        }
+
+        .message-time {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .agent-execution-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .agent-execution-panel h3 {
+            font-size: 1rem;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .agent-execution-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .agent-execution-item {
+            padding: 10px 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 3px solid #667eea;
+            font-size: 13px;
+        }
+
+        .agent-execution-item.completed {
+            border-left-color: #28a745;
+        }
+
+        .agent-execution-item.error {
+            border-left-color: #dc3545;
+        }
+
+        .agent-execution-item .step {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .agent-execution-item .agent-name {
+            color: #333;
+            font-weight: 600;
+        }
+
+        .agent-execution-item .status {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .agent-execution-item .duration {
+            color: #999;
+            font-size: 11px;
+        }
+
+        .input-area {
+            padding: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 10px;
+        }
+
+        #messageInput {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 24px;
+            font-size: 15px;
+            resize: none;
+            outline: none;
+            transition: border-color 0.3s;
+            font-family: inherit;
+            max-height: 120px;
+        }
+
+        #messageInput:focus {
+            border-color: #667eea;
+        }
+
+        #sendBtn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #667eea;
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s, transform 0.2s;
+        }
+
+        #sendBtn:hover:not(:disabled) {
+            background: #5568d3;
+            transform: scale(1.05);
+        }
+
+        #sendBtn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .typing-indicator {
+            display: none;
+            align-items: center;
+            gap: 5px;
+            padding: 12px 16px;
+            background: #f0f0f0;
+            border-radius: 12px;
+            max-width: 100px;
+        }
+
+        .typing-indicator.active {
+            display: flex;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #999;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .welcome-message {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .welcome-message h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .welcome-message p {
+            font-size: 14px;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #5568d3;
+        }
+
+        @media (max-width: 768px) {
+            .chat-container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                max-height: 200px;
+            }
+
+            .message {
+                max-width: 90%;
+            }
+        }
+
+        /* KaTeX 公式样式 */
+        .katex {
+            font-size: 1.1em;
+        }
+
+        .katex-display {
+            margin: 1em 0;
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+
+        /* 金融公式容器 */
+        .formula-container {
+            background: #f8f9fa;
+            border-left: 3px solid #667eea;
+            padding: 15px 20px;
+            margin: 10px 0;
+            border-radius: 6px;
+        }
+
+        .formula-container .formula-title {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .formula-inline {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            margin: 0 4px;
+        }
+
+        /* 美化金融结果表格 */
+        .financial-result {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            border: 1px solid #e0e0e0;
+        }
+
+        .financial-result h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .financial-result table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+
+        .financial-result td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .financial-result tr:last-child td {
+            border-bottom: none;
+        }
+
+        .financial-result .label {
+            font-weight: 600;
+            color: #555;
+        }
+
+        .financial-result .value {
+            color: #333;
+            text-align: right;
+        }
+
+        .info-box {
+            background: #e8f4f8;
+            border-left: 4px solid #17a2b8;
+            padding: 12px 16px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        /* 文件上传按钮样式 */
+        input[type="file"]::file-selector-button {
+            cursor: pointer;
+        }
+
+        /* 自定义确认对话框 */
+        .confirm-dialog {
+            position: fixed;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            min-width: 280px;
+            z-index: 10000;
+            display: none;
+            animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -10px);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, 0);
+            }
+        }
+
+        .confirm-dialog.show {
+            display: block;
+        }
+
+        .confirm-dialog-header {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .confirm-dialog-body {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .confirm-dialog-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .confirm-btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .confirm-btn-cancel {
+            background: #f5f5f5;
+            color: #666;
+            border: 1px solid #ddd;
+        }
+
+        .confirm-btn-cancel:hover {
+            background: #e8e8e8;
+        }
+
+        .confirm-btn-delete {
+            background: #dc3545;
+            color: white;
+            border: none;
+        }
+
+        .confirm-btn-delete:hover {
+            background: #c82333;
+        }
+
+        .confirm-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: 9999;
+            display: none;
+        }
+
+        .confirm-overlay.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <div class="nav-left">
+            <span class="nav-icon">✨</span>
+            <h1>智能知识库</h1>
+        </div>
+        <div class="nav-links">
+            <a href="chat.html">💬 智能问答</a>
+            <a href="agent-chat.html" class="active">智能体对话</a>
+            <a href="domain.html">📚 领域文档</a>
+            <a href="qdrant.html">🗂️ Qdrant管理</a>
+        </div>
+    </div>
+
+    <!-- 自定义确认对话框 -->
+    <div class="confirm-overlay" id="confirmOverlay"></div>
+    <div class="confirm-dialog" id="confirmDialog">
+        <div class="confirm-dialog-header">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dc3545" stroke-width="2">
+                <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            <span>删除对话</span>
+        </div>
+        <div class="confirm-dialog-body">
+            确定要删除这个对话吗？删除后将无法恢复。
+        </div>
+        <div class="confirm-dialog-footer">
+            <button class="confirm-btn confirm-btn-cancel" onclick="cancelDelete()">取消</button>
+            <button class="confirm-btn confirm-btn-delete" onclick="confirmDelete()">删除</button>
+        </div>
+    </div>
+
+    <div class="chat-container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>对话历史</h2>
+                <button class="new-chat-btn" onclick="newChat()">新建对话</button>
+            </div>
+            <div class="conversation-list" id="conversationList"></div>
+        </div>
+
+        <div class="main-chat">
+            <div class="chat-panel">
+                <div class="chat-header">
+                    <h2 id="chatTitle">智能体对话</h2>
+                    <div class="chat-options">
+                        <label class="chat-option">
+                            <input type="checkbox" id="enableVectorStore" checked>
+                            向量检索
+                        </label>
+                        <label class="chat-option">
+                            <input type="checkbox" id="enableMcp" checked>
+                            MCP文件
+                        </label>
+                        <label class="chat-option">
+                            <input type="checkbox" id="enableTools" checked>
+                            工具调用
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 快捷测试按钮 -->
+                <div style="padding: 10px 20px; border-bottom: 1px solid #eee; display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button onclick="quickTest('calculation')" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #e0e0e0; background: white; cursor: pointer; font-size: 12px;">🔢 计算: 1+1</button>
+                    <button onclick="quickTest('scientific')" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #e0e0e0; background: white; cursor: pointer; font-size: 12px;">📐 科学计算</button>
+                    <button onclick="quickTest('irr')" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #e0e0e0; background: white; cursor: pointer; font-size: 12px;">📊 IRR计算</button>
+                    <button onclick="quickTest('bond')" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #e0e0e0; background: white; cursor: pointer; font-size: 12px;">📊 债券价格</button>
+                    <button onclick="quickTest('option')" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #e0e0e0; background: white; cursor: pointer; font-size: 12px;">📈 期权定价</button>
+                    <button onclick="quickTest('amortization')" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #e0e0e0; background: white; cursor: pointer; font-size: 12px;">📋 摊销计划</button>
+                    <button onclick="quickTest('weather')" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #e0e0e0; background: white; cursor: pointer; font-size: 12px;">🌤️ 天气</button>
+                    <button onclick="quickTest('time')" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #e0e0e0; background: white; cursor: pointer; font-size: 12px;">🕐 时间</button>
+                    <button onclick="quickTest('knowledge')" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #e0e0e0; background: white; cursor: pointer; font-size: 12px;">📚 知识库</button>
+                </div>
+
+                <div class="messages" id="messages">
+                    <div class="welcome-message" id="welcomeMessage">
+                        <h3>欢迎使用智能体对话系统</h3>
+                        <p>支持多智能体协作、向量检索、MCP 文件操作和工具调用</p>
+                    </div>
+                </div>
+
+                <!-- 消息附件预览 -->
+                <div id="attachmentPreview" style="display: none; padding: 10px 20px; border-top: 1px solid #eee;">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 12px; color: #667eea;">📎</span>
+                            <span id="attachmentName" style="font-size: 13px; color: #333;"></span>
+                            <span id="attachmentSize" style="font-size: 11px; color: #999;"></span>
+                        </div>
+                        <button onclick="removeAttachment()" style="padding: 4px 8px; border: none; background: none; color: #dc3545; cursor: pointer; font-size: 16px;">×</button>
+                    </div>
+                </div>
+
+                <div class="input-area">
+                    <div class="input-wrapper">
+                        <label for="fileAttachment" style="cursor: pointer; padding: 10px; display: flex; align-items: center; justify-content: center; color: #667eea; border-right: 1px solid #e0e0e0;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                            </svg>
+                        </label>
+                        <input type="file" id="fileAttachment" style="display: none;" accept=".txt,.pdf,.md,.doc,.docx">
+                        <textarea id="messageInput" placeholder="输入您的问题... Agent 将自动选择最合适的工具来回答" rows="1"></textarea>
+                        <button id="sendBtn" onclick="sendMessage()">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="agent-execution-panel">
+                <h3>⚡ Agent 执行过程</h3>
+                <div class="agent-execution-list" id="agentExecutionList">
+                    <div style="color: #999; font-size: 13px; text-align: center;">
+                        等待 Agent 执行...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentConversationId = null;
+        let conversations = [];
+        let agentExecutionHistory = [];
+        let conversationTitles = {}; // 存储对话标题映射
+
+        const messagesContainer = document.getElementById('messages');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const conversationList = document.getElementById('conversationList');
+        const welcomeMessage = document.getElementById('welcomeMessage');
+        const chatTitle = document.getElementById('chatTitle');
+        const agentExecutionList = document.getElementById('agentExecutionList');
+        const enableVectorStore = document.getElementById('enableVectorStore');
+        const enableMcp = document.getElementById('enableMcp');
+        const enableTools = document.getElementById('enableTools');
+
+        // 自动调整textarea高度
+        messageInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+
+        // 回车发送
+        messageInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // 加载对话列表
+        async function loadConversations() {
+            try {
+                const response = await fetch('/api/agent-chat/conversations');
+                conversations = await response.json();
+
+                // 加载每个对话的标题（第一条用户消息）
+                for (const convId of conversations) {
+                    if (!conversationTitles[convId]) {
+                        try {
+                            const historyResponse = await fetch(`/api/agent-chat/history/${convId}`);
+                            const messages = await historyResponse.json();
+                            const firstUserMessage = messages.find(m => m.role === 'user');
+                            if (firstUserMessage) {
+                                conversationTitles[convId] = truncateTitle(firstUserMessage.content);
+                            } else {
+                                conversationTitles[convId] = '新对话';
+                            }
+                        } catch (e) {
+                            conversationTitles[convId] = '对话 ' + convId.substring(0, 8);
+                        }
+                    }
+                }
+
+                renderConversationList();
+            } catch (error) {
+                console.error('Failed to load conversations:', error);
+            }
+        }
+
+        // 截断标题
+        function truncateTitle(title) {
+            if (title.length > 15) {
+                return title.substring(0, 15) + '...';
+            }
+            return title;
+        }
+
+        function renderConversationList() {
+            conversationList.innerHTML = conversations.map(convId => `
+                <div class="conversation-item ${convId === currentConversationId ? 'active' : ''}"
+                     onclick="loadConversation('${convId}')">
+                    <div class="conversation-title">${conversationTitles[convId] || '加载中...'}</div>
+                    <button class="conversation-delete-btn"
+                            onclick="deleteConversation('${convId}', event)"
+                            title="删除对话">
+                        ×
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        let conversationToDelete = null;
+
+        async function deleteConversation(conversationId, event) {
+            event.stopPropagation(); // 防止触发loadConversation
+
+            conversationToDelete = conversationId;
+
+            // 获取鼠标位置和对话项位置
+            const rect = event.target.getBoundingClientRect();
+            const dialog = document.getElementById('confirmDialog');
+            const overlay = document.getElementById('confirmOverlay');
+
+            // 定位对话框
+            let left = rect.right + 10;
+            let top = rect.top;
+
+            // 如果右侧空间不够，显示在左侧
+            if (left + 280 > window.innerWidth) {
+                left = rect.left - 290;
+            }
+
+            // 如果底部空间不够，向上调整
+            if (top + 150 > window.innerHeight) {
+                top = window.innerHeight - 160;
+            }
+
+            dialog.style.left = left + 'px';
+            dialog.style.top = top + 'px';
+
+            // 显示对话框
+            overlay.classList.add('show');
+            dialog.classList.add('show');
+        }
+
+        async function confirmDelete() {
+            if (!conversationToDelete) return;
+
+            const conversationId = conversationToDelete;
+
+            // 隐藏对话框
+            document.getElementById('confirmOverlay').classList.remove('show');
+            document.getElementById('confirmDialog').classList.remove('show');
+            conversationToDelete = null;
+
+            try {
+                const response = await fetch(`/api/agent-chat/conversations/${conversationId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    // 从列表中移除
+                    conversations = conversations.filter(id => id !== conversationId);
+                    delete conversationTitles[conversationId];
+
+                    // 如果删除的是当前对话，创建新对话
+                    if (currentConversationId === conversationId) {
+                        newChat();
+                    } else {
+                        renderConversationList();
+                    }
+                } else {
+                    showError('删除失败');
+                }
+            } catch (error) {
+                console.error('删除对话失败:', error);
+                showError('删除失败: ' + error.message);
+            }
+        }
+
+        function cancelDelete() {
+            // 隐藏对话框
+            document.getElementById('confirmOverlay').classList.remove('show');
+            document.getElementById('confirmDialog').classList.remove('show');
+            conversationToDelete = null;
+        }
+
+        function showError(message) {
+            // 简单的错误提示
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: #dc3545;
+                color: white;
+                padding: 12px 24px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+                z-index: 10001;
+                font-size: 14px;
+                font-weight: 500;
+            `;
+            errorDiv.textContent = message;
+            document.body.appendChild(errorDiv);
+
+            setTimeout(() => {
+                errorDiv.remove();
+            }, 2000);
+        }
+
+        function newChat() {
+            currentConversationId = null;
+            chatTitle.textContent = '智能体对话';
+            messagesContainer.innerHTML = `
+                <div class="welcome-message">
+                    <h3>欢迎使用智能体对话系统</h3>
+                    <p>支持多智能体协作、向量检索、MCP 文件操作和工具调用</p>
+                </div>
+            `;
+            agentExecutionList.innerHTML = `
+                <div style="color: #999; font-size: 13px; text-align: center;">
+                    等待 Agent 执行...
+                </div>
+            `;
+            agentExecutionHistory = [];
+            renderConversationList();
+        }
+
+        async function loadConversation(conversationId) {
+            try {
+                currentConversationId = conversationId;
+
+                const response = await fetch(`/api/agent-chat/history/${conversationId}`);
+                const messages = await response.json();
+
+                // 提取第一条用户消息作为标题
+                const firstUserMessage = messages.find(m => m.role === 'user');
+                if (firstUserMessage && !conversationTitles[conversationId]) {
+                    conversationTitles[conversationId] = truncateTitle(firstUserMessage.content);
+                }
+
+                // 页面标题显示对话ID
+                chatTitle.textContent = `${conversationTitles[conversationId] || '对话'} (${conversationId.substring(0, 8)})`;
+
+                messagesContainer.innerHTML = '';
+                messages.forEach(msg => {
+                    appendMessage(msg.role, msg.content, msg.createdAt);
+                });
+
+                // 加载 Agent 执行历史
+                const historyResponse = await fetch('/api/agent-chat/agent-execution-history');
+                agentExecutionHistory = await historyResponse.json();
+                renderAgentExecutionHistory();
+
+                renderConversationList();
+            } catch (error) {
+                console.error('Failed to load conversation:', error);
+            }
+        }
+
+        async function sendMessage() {
+            const question = messageInput.value.trim();
+            if (!question) return;
+
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+
+            welcomeMessage.style.display = 'none';
+
+            // 如果有附件，先上传文件
+            let filePath = null;
+            if (messageAttachment) {
+                try {
+                    const formData = new FormData();
+                    formData.append('file', messageAttachment);
+                    if (currentConversationId) {
+                        formData.append('conversationId', currentConversationId);
+                    }
+
+                    const uploadResponse = await fetch('/api/agent-files/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const uploadResult = await uploadResponse.json();
+                    if (uploadResult.success) {
+                        filePath = uploadResult.filePath;
+                    } else {
+                        appendMessage('assistant', '❌ 文件上传失败: ' + uploadResult.message);
+                        return;
+                    }
+                } catch (error) {
+                    appendMessage('assistant', '❌ 文件上传失败: ' + error.message);
+                    return;
+                }
+            }
+
+            // 构建最终消息，如果有文件附件则告知LLM
+            let finalMessage = question;
+            if (filePath) {
+                // 提取相对路径（从uploads开始）
+                const relativePath = filePath.includes('/uploads/') ? filePath.split('/uploads/')[1] : filePath;
+                finalMessage = `${question}\n\n[用户已上传文件，请使用MCP文件工具readFile读取并分析: uploads/${relativePath}]`;
+            }
+
+            // 显示用户消息
+            let displayMessage = question;
+            if (messageAttachment) {
+                displayMessage = `📎 文件: ${messageAttachment.name}\n\n${question}`;
+            }
+            appendMessage('user', displayMessage);
+
+            // 清除附件
+            if (filePath) {
+                removeAttachment();
+            }
+
+            // 保存当前问题作为对话标题
+            if (!currentConversationId && question) {
+                const tempId = 'temp_' + Date.now();
+                conversationTitles[tempId] = truncateTitle(question);
+            }
+
+            sendBtn.disabled = true;
+
+            // 创建助手消息占位符
+            const assistantMessageDiv = createMessageElement('assistant', '');
+            messagesContainer.appendChild(assistantMessageDiv);
+            const messageContent = assistantMessageDiv.querySelector('.message-content');
+
+            // 添加输入指示器
+            const typingIndicator = document.createElement('div');
+            typingIndicator.className = 'typing-indicator active';
+            typingIndicator.innerHTML = `
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            `;
+            messageContent.appendChild(typingIndicator);
+
+            // 清空并准备显示 Agent 执行历史
+            agentExecutionHistory = [];
+            agentExecutionList.innerHTML = '<div style="color: #667eea; font-size: 13px; text-align: center;">🔄 Agent 执行中...</div>';
+
+            try {
+                const response = await fetch('/api/agent-chat/stream', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: finalMessage,
+                        conversationId: currentConversationId || null,
+                        enableVectorStore: enableVectorStore.checked,
+                        enableMcp: enableMcp.checked,
+                        enableTools: enableTools.checked
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status + ': ' + response.statusText);
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let fullResponse = '';
+
+                // 移除输入指示器
+                typingIndicator.remove();
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split('\n');
+                    let currentEvent = null;
+
+                    for (let i = 0; i < lines.length; i++) {
+                        const line = lines[i];
+                        const trimmedLine = line.trim();
+
+                        if (!trimmedLine) continue;
+
+                        // SSE 格式解析 - event:后面可能有空格也可能没有
+                        if (trimmedLine.startsWith('event:')) {
+                            currentEvent = trimmedLine.substring(6).trim();
+                        } else if (trimmedLine.startsWith('data:')) {
+                            const data = trimmedLine.substring(5).trim(); // data: 是5个字符
+
+                            // 根据 event 类型处理
+                            if (currentEvent === 'message') {
+                                fullResponse += data;
+                                // 流式输出时使用 textContent（性能更好）
+                                messageContent.textContent = fullResponse;
+                                scrollToBottom();
+                            } else if (currentEvent === 'agent-history') {
+                                try {
+                                    agentExecutionHistory = JSON.parse(data);
+                                    renderAgentExecutionHistory();
+                                } catch (e) {
+                                    console.error('Failed to parse agent history:', data, e);
+                                }
+                            } else if (currentEvent === 'done') {
+                                currentConversationId = data;
+                                loadConversations();
+                            }
+                        }
+                    }
+                }
+
+                // 流式输出结束后，延迟一下再渲染 KaTeX 公式（确保完整的公式）
+                setTimeout(() => {
+                    messageContent.innerHTML = renderMathFormulas(fullResponse);
+                    scrollToBottom();
+                }, 100);
+
+                // 添加时间戳
+                const timeDiv = document.createElement('div');
+                timeDiv.className = 'message-time';
+                timeDiv.textContent = new Date().toLocaleTimeString();
+                assistantMessageDiv.appendChild(timeDiv);
+
+            } catch (error) {
+                console.error('Chat error:', error);
+                messageContent.textContent = '抱歉，发生了错误。请稍后重试。';
+                agentExecutionList.innerHTML = `
+                    <div style="color: #dc3545; font-size: 13px; text-align: center;">
+                        ❌ 执行失败: ${error.message}
+                    </div>
+                `;
+            } finally {
+                sendBtn.disabled = false;
+            }
+        }
+
+        function appendMessage(role, content, time = null) {
+            const messageDiv = createMessageElement(role, content);
+            if (time) {
+                const timeDiv = document.createElement('div');
+                timeDiv.className = 'message-time';
+                timeDiv.textContent = new Date(time).toLocaleString();
+                messageDiv.appendChild(timeDiv);
+            }
+            messagesContainer.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
+        function createMessageElement(role, content) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+
+            if (role === 'assistant') {
+                // AI 助手使用机器人图标
+                avatar.innerHTML = `
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <!-- 机器人头部 -->
+                        <rect x="4" y="6" width="16" height="12" rx="2" fill="#667eea"/>
+                        <!-- 天线 -->
+                        <line x1="12" y1="6" x2="12" y2="3" stroke="#667eea" stroke-width="2" stroke-linecap="round"/>
+                        <circle cx="12" cy="2" r="1.5" fill="#667eea"/>
+                        <!-- 眼睛 -->
+                        <circle cx="8" cy="11" r="1.5" fill="white"/>
+                        <circle cx="16" cy="11" r="1.5" fill="white"/>
+                        <!-- 嘴巴 -->
+                        <rect x="9" y="14" width="6" height="1.5" rx="0.75" fill="white"/>
+                        <!-- 耳朵 -->
+                        <rect x="2" y="9" width="2" height="4" rx="1" fill="#667eea"/>
+                        <rect x="20" y="9" width="2" height="4" rx="1" fill="#667eea"/>
+                    </svg>
+                `;
+            }
+
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+
+            // 渲染 LaTeX 公式
+            messageContent.innerHTML = renderMathFormulas(content);
+
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(messageContent);
+
+            return messageDiv;
+        }
+
+        // 渲染数学公式和 Markdown
+        function renderMathFormulas(text) {
+            if (typeof text !== 'string') return text;
+
+            // 辅助函数：检查公式是否完整
+            function isFormulaComplete(formula) {
+                const trimmed = formula.trim();
+                // 检查是否有明显的截断迹象
+                if (trimmed.endsWith('.') || trimmed.endsWith(',') ||
+                    trimmed.endsWith('+') || trimmed.endsWith('-') ||
+                    trimmed.endsWith('=') || trimmed.endsWith('\\') ||
+                    trimmed.endsWith('(') || trimmed.endsWith('{')) {
+                    return false;
+                }
+                // 检查括号是否平衡
+                const openParens = (trimmed.match(/\(/g) || []).length;
+                const closeParens = (trimmed.match(/\)/g) || []).length;
+                const openBraces = (trimmed.match(/\{/g) || []).length;
+                const closeBraces = (trimmed.match(/\}/g) || []).length;
+                const openBrackets = (trimmed.match(/\[/g) || []).length;
+                const closeBrackets = (trimmed.match(/\]/g) || []).length;
+
+                return openParens === closeParens &&
+                       openBraces === closeBraces &&
+                       openBrackets === closeBrackets;
+            }
+
+            // 1. 先渲染 LaTeX 标准格式块级公式 \[...\]
+            text = text.replace(/\\\[([\s\S]*?)\\\]/g, (match, formula) => {
+                try {
+                    if (!isFormulaComplete(formula)) {
+                        return match; // 不完整的公式保持原样
+                    }
+                    return '<div class="katex-display" style="margin: 15px 0; text-align: center; overflow-x: auto; overflow-y: hidden;">' +
+                           katex.renderToString(formula.trim(), { displayMode: true }) +
+                           '</div>';
+                } catch (e) {
+                    console.error('KaTeX render error:', e, formula);
+                    return match;
+                }
+            });
+
+            // 2. 渲染 LaTeX 标准格式行内公式 \(......\)
+            text = text.replace(/\\\(([^)]*?)\\\)/g, (match, formula) => {
+                try {
+                    if (!isFormulaComplete(formula)) {
+                        return match;
+                    }
+                    return katex.renderToString(formula.trim(), { displayMode: false });
+                } catch (e) {
+                    console.error('KaTeX render error:', e, formula);
+                    return match;
+                }
+            });
+
+            // 3. 渲染块级公式 $$...$$（避免被 Markdown 处理）
+            text = text.replace(/\$\$([^$]+)\$\$/g, (match, formula) => {
+                try {
+                    if (!isFormulaComplete(formula)) {
+                        return match;
+                    }
+                    return '<div class="katex-display" style="margin: 15px 0; text-align: center; overflow-x: auto; overflow-y: hidden;">' +
+                           katex.renderToString(formula.trim(), { displayMode: true }) +
+                           '</div>';
+                } catch (e) {
+                    console.error('KaTeX render error:', e, formula);
+                    return match;
+                }
+            });
+
+            // 4. 渲染行内公式 $...$
+            text = text.replace(/\$([^$]+)\$/g, (match, formula) => {
+                try {
+                    if (!isFormulaComplete(formula)) {
+                        return match;
+                    }
+                    return katex.renderToString(formula.trim(), { displayMode: false });
+                } catch (e) {
+                    console.error('KaTeX render error:', e, formula);
+                    return match;
+                }
+            });
+
+            // 5. 处理 Markdown 标题 ## 和 ###
+            text = text.replace(/^### (.+)$/gm, '<h4 style="margin: 15px 0 10px 0; color: #667eea; font-size: 1.1em;">$1</h4>');
+            text = text.replace(/^## (.+)$/gm, '<h3 style="margin: 20px 0 15px 0; color: #667eea; font-size: 1.3em;">$1</h3>');
+
+            // 6. 处理加粗 **text**
+            text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+            // 7. 处理无序列表 - 开头
+            text = text.replace(/^- (.+)$/gm, '<li style="margin: 5px 0 5px 20px;">$1</li>');
+
+            // 8. 处理连续的 li，包裹在 ul 中
+            text = text.replace(/(<li[^>]*>.*<\/li>\n?)+/g, (match) => {
+                return '<ul style="margin: 10px 0; padding-left: 20px;">' + match + '</ul>';
+            });
+
+            // 9. 将换行符转换为 <br>（但不在 HTML 标签中）
+            text = text.replace(/\n(?![^<]*>)/g, '<br>');
+
+            return text;
+        }
+
+        function renderAgentExecutionHistory() {
+            if (agentExecutionHistory.length === 0) {
+                agentExecutionList.innerHTML = `
+                    <div style="color: #999; font-size: 13px; text-align: center;">
+                        等待 Agent 执行...
+                    </div>
+                `;
+                return;
+            }
+
+            agentExecutionList.innerHTML = agentExecutionHistory.map(item => `
+                <div class="agent-execution-item ${item.status.toLowerCase()}">
+                    <div>
+                        <span class="step">步骤 ${item.step}</span>
+                        <span class="agent-name">${getAgentDisplayName(item.agentName)}</span>
+                    </div>
+                    <div class="status">状态: ${getStatusText(item.status)}</div>
+                    ${item.duration ? `<div class="duration">耗时: ${item.duration}ms</div>` : ''}
+                    ${item.output ? `<div style="margin-top: 5px; color: #666; font-size: 12px;">${truncateOutput(item.output)}</div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function getAgentDisplayName(agentName) {
+            const displayNames = {
+                'RequestClassifier': '请求分类器',
+                'Calculator': '计算器 (exp4j)',
+                'ScientificCalculator': '科学计算器',
+                'WeatherService': '天气服务',
+                'TimeService': '时间服务',
+                'VectorStore': '向量检索',
+                'GeneralChat': '通用对话',
+                'Enhanced_LLM_Agent': '增强型AI',
+                'LLM_Agent': 'AI助手',
+                'ToolExecution': '工具执行',
+                'UnitConverter': '单位转换'
+            };
+            return displayNames[agentName] || agentName;
+        }
+
+        function getStatusText(status) {
+            const statusTexts = {
+                'STARTED': '🔄 执行中',
+                'COMPLETED': '✅ 完成',
+                'ERROR': '❌ 失败'
+            };
+            return statusTexts[status] || status;
+        }
+
+        function truncateOutput(output) {
+            if (!output) return '';
+            return output.length > 100 ? output.substring(0, 100) + '...' : output;
+        }
+
+        function scrollToBottom() {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // ========== 消息附件功能 ==========
+        // 格式化文件大小
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        // ========== 消息附件功能 ==========
+        let messageAttachment = null;
+        const fileAttachment = document.getElementById('fileAttachment');
+        const attachmentPreview = document.getElementById('attachmentPreview');
+        const attachmentName = document.getElementById('attachmentName');
+        const attachmentSize = document.getElementById('attachmentSize');
+
+        // 文件附件选择监听
+        fileAttachment.addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // 显示附件预览
+            messageAttachment = file;
+            attachmentName.textContent = file.name;
+            attachmentSize.textContent = formatFileSize(file.size);
+            attachmentPreview.style.display = 'block';
+
+            // 清空input，允许重复选择同一文件
+            fileAttachment.value = '';
+        });
+
+        // 移除附件
+        function removeAttachment() {
+            messageAttachment = null;
+            attachmentPreview.style.display = 'none';
+        }
+
+        // 页面加载时初始化
+        loadConversations();
+
+        // 快捷测试功能
+        async function quickTest(type) {
+            const questions = {
+                'calculation': '1 + 1 等于多少？',
+                'scientific': 'sin(30) + cos(60) 等于多少？',
+                'irr': '投资项目初始投资10000元，未来5年每年收益2500元，计算内部收益率IRR',
+                'bond': '面值1000元的债券，票面利率5%，到期收益率4%，5年期，半年付息一次，计算债券价格',
+                'option': '使用Black-Scholes模型计算看涨期权价格：标的价格100元，行权价105元，1年期，无风险利率3%，波动率25%',
+                'amortization': '本金100000元，年利率5%，10年期，每月等额本息还款，计算摊销计划',
+                'weather': '苏州今天的天气怎么样？',
+                'time': '现在几点了？',
+                'knowledge': '三国演义中刘备有哪些兄弟？'
+            };
+
+            messageInput.value = questions[type];
+            sendMessage();
+        }
+    </script>
+
+    <!-- KaTeX JS - 不使用 defer，确保立即加载 -->
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+</body>
+</html>

@@ -154,12 +154,7 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-        }
-
-        .conversation-time {
-            font-size: 12px;
-            opacity: 0.7;
-            margin-top: 4px;
+            color: #333;
         }
 
         .main-chat {
@@ -201,13 +196,17 @@
             flex-direction: row-reverse;
         }
 
+        .message.user .message-avatar {
+            display: none;
+        }
+
         .message.assistant {
             align-self: flex-start;
         }
 
         .message-avatar {
-            width: 36px;
-            height: 36px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -216,14 +215,10 @@
             flex-shrink: 0;
         }
 
-        .message.user .message-avatar {
-            background: #667eea;
-            color: white;
-        }
-
         .message.assistant .message-avatar {
-            background: #f0f0f0;
-            color: #666;
+            background: white;
+            border: 2px solid #e0e7ff;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
         }
 
         .message-content {
@@ -376,6 +371,7 @@
         <div class="nav-links">
             <a href="upload.html">📄 文件上传</a>
             <a href="chat.html" class="active">💬 智能问答</a>
+            <a href="agent-chat.html">智能体对话</a>
             <a href="domain.html">📚 领域文档</a>
             <a href="qdrant.html">🗂️ Qdrant管理</a>
         </div>
@@ -397,7 +393,7 @@
 
             <div class="messages" id="messages">
                 <div class="welcome-message" id="welcomeMessage">
-                    <h3>👋 欢迎使用知识库问答系统</h3>
+                    <h3>欢迎使用知识库问答系统</h3>
                     <p>上传文档后，您可以向系统提问相关问题</p>
                 </div>
             </div>
@@ -418,6 +414,7 @@
     <script>
         let currentConversationId = null;
         let conversations = [];
+        let conversationTitles = {}; // 存储对话标题映射
 
         const messagesContainer = document.getElementById('messages');
         const messageInput = document.getElementById('messageInput');
@@ -445,18 +442,44 @@
             try {
                 const response = await fetch('/api/chat/conversations');
                 conversations = await response.json();
+
+                // 加载每个对话的标题（第一条用户消息）
+                for (const convId of conversations) {
+                    if (!conversationTitles[convId]) {
+                        try {
+                            const historyResponse = await fetch(`/api/chat/history/${convId}`);
+                            const messages = await historyResponse.json();
+                            const firstUserMessage = messages.find(m => m.role === 'user');
+                            if (firstUserMessage) {
+                                conversationTitles[convId] = truncateTitle(firstUserMessage.content);
+                            } else {
+                                conversationTitles[convId] = '新对话';
+                            }
+                        } catch (e) {
+                            conversationTitles[convId] = '对话 ' + convId.substring(0, 8);
+                        }
+                    }
+                }
+
                 renderConversationList();
             } catch (error) {
                 console.error('Failed to load conversations:', error);
             }
         }
 
+        // 截断标题
+        function truncateTitle(title) {
+            if (title.length > 15) {
+                return title.substring(0, 15) + '...';
+            }
+            return title;
+        }
+
         function renderConversationList() {
             conversationList.innerHTML = conversations.map(convId => `
                 <div class="conversation-item ${convId === currentConversationId ? 'active' : ''}"
                      onclick="loadConversation('${convId}')">
-                    <div class="conversation-title">对话 ${convId.substring(0, 8)}</div>
-                    <div class="conversation-time">${convId}</div>
+                    <div class="conversation-title">${conversationTitles[convId] || '加载中...'}</div>
                 </div>
             `).join('');
         }
@@ -466,7 +489,7 @@
             chatTitle.textContent = '新对话';
             messagesContainer.innerHTML = `
                 <div class="welcome-message">
-                    <h3>👋 欢迎使用知识库问答系统</h3>
+                    <h3>欢迎使用知识库问答系统</h3>
                     <p>上传文档后，您可以向系统提问相关问题</p>
                 </div>
             `;
@@ -476,10 +499,18 @@
         async function loadConversation(conversationId) {
             try {
                 currentConversationId = conversationId;
-                chatTitle.textContent = `对话 ${conversationId.substring(0, 8)}`;
 
                 const response = await fetch(`/api/chat/history/${conversationId}`);
                 const messages = await response.json();
+
+                // 提取第一条用户消息作为标题
+                const firstUserMessage = messages.find(m => m.role === 'user');
+                if (firstUserMessage && !conversationTitles[conversationId]) {
+                    conversationTitles[conversationId] = truncateTitle(firstUserMessage.content);
+                }
+
+                // 页面标题显示对话ID
+                chatTitle.textContent = `${conversationTitles[conversationId] || '对话'} (${conversationId.substring(0, 8)})`;
 
                 messagesContainer.innerHTML = '';
                 messages.forEach(msg => {
@@ -503,6 +534,12 @@
 
             // 显示用户消息
             appendMessage('user', question);
+
+            // 保存当前问题作为对话标题
+            if (!currentConversationId && question) {
+                const tempId = 'temp_' + Date.now();
+                conversationTitles[tempId] = truncateTitle(question);
+            }
 
             sendBtn.disabled = true;
 
@@ -544,35 +581,37 @@
                 // 移除输入指示器
                 typingIndicator.remove();
 
+                // Track current event type
+                let currentEventType = null;
+
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) break;
 
-                    const chunk = decoder.decode(value);
+                    const chunk = decoder.decode(value, { stream: true });
                     const lines = chunk.split('\n');
+                    let currentEvent = null;
 
-                    for (const line of lines) {
-                        if (line.startsWith('data: ')) {
-                            const data = line.substring(6);
+                    for (let i = 0; i < lines.length; i++) {
+                        const line = lines[i];
+                        const trimmedLine = line.trim();
 
-                            if (data.includes('"event":"message"')) {
-                                const messageMatch = data.match(/"data":"([^"]*)"/);
-                                if (messageMatch) {
-                                    const content = messageMatch[1]
-                                        .replace(/\\n/g, '\n')
-                                        .replace(/\\r/g, '\r')
-                                        .replace(/\\"/g, '"')
-                                        .replace(/\\\\/g, '\\');
-                                    fullResponse += content;
-                                    messageContent.textContent = fullResponse;
-                                    scrollToBottom();
-                                }
-                            } else if (data.includes('"event":"done"')) {
-                                const idMatch = data.match(/"data":"([^"]*)"/);
-                                if (idMatch) {
-                                    currentConversationId = idMatch[1];
-                                    loadConversations();
-                                }
+                        if (!trimmedLine) continue;
+
+                        // SSE 格式解析 - event:后面可能有空格也可能没有
+                        if (trimmedLine.startsWith('event:')) {
+                            currentEvent = trimmedLine.substring(6).trim();
+                        } else if (trimmedLine.startsWith('data:')) {
+                            const data = trimmedLine.substring(5).trim(); // data: 是5个字符
+
+                            // 根据 event 类型处理
+                            if (currentEvent === 'message') {
+                                fullResponse += data;
+                                messageContent.textContent = fullResponse;
+                                scrollToBottom();
+                            } else if (currentEvent === 'done') {
+                                currentConversationId = data;
+                                loadConversations();
                             }
                         }
                     }
@@ -610,7 +649,27 @@
 
             const avatar = document.createElement('div');
             avatar.className = 'message-avatar';
-            avatar.textContent = role === 'user' ? '👤' : '🤖';
+
+            if (role === 'assistant') {
+                // AI 助手使用机器人图标
+                avatar.innerHTML = `
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <!-- 机器人头部 -->
+                        <rect x="4" y="6" width="16" height="12" rx="2" fill="#667eea"/>
+                        <!-- 天线 -->
+                        <line x1="12" y1="6" x2="12" y2="3" stroke="#667eea" stroke-width="2" stroke-linecap="round"/>
+                        <circle cx="12" cy="2" r="1.5" fill="#667eea"/>
+                        <!-- 眼睛 -->
+                        <circle cx="8" cy="11" r="1.5" fill="white"/>
+                        <circle cx="16" cy="11" r="1.5" fill="white"/>
+                        <!-- 嘴巴 -->
+                        <rect x="9" y="14" width="6" height="1.5" rx="0.75" fill="white"/>
+                        <!-- 耳朵 -->
+                        <rect x="2" y="9" width="2" height="4" rx="1" fill="#667eea"/>
+                        <rect x="20" y="9" width="2" height="4" rx="1" fill="#667eea"/>
+                    </svg>
+                `;
+            }
 
             const messageContent = document.createElement('div');
             messageContent.className = 'message-content';
