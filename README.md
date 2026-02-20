@@ -16,13 +16,15 @@
 ## 📋 目录
 
 - [功能特性](#-功能特性)
-- [技术架构](#-技术架构)
 - [快速开始](#-快速开始)
 - [功能界面](#-功能界面)
 - [API 接口](#-api-接口)
 - [配置说明](#-配置说明)
+- [数据库结构](#-数据库结构)
 - [项目结构](#-项目结构)
+- [核心功能详解](#-核心功能详解)
 - [常见问题](#-常见问题)
+- [更多文档](#-更多文档)
 
 ---
 
@@ -225,6 +227,36 @@ model-router:
   percentage:
     aliyun: 0                  # 0% 使用阿里云（仅本地）
     local: 100                 # 100% 使用本地模型
+```
+
+---
+
+## 🗄️ 数据库结构
+
+系统使用 **SQLite** 作为关系型数据库，配合 **Qdrant** 向量数据库。
+
+### 数据表
+
+| 表名 | 说明 |
+|------|------|
+| `users` | 用户表 |
+| `chat_messages` | 聊天消息表 |
+| `domain_documents` | 领域文档表 |
+
+**重要**：首次启动时，JPA 会自动创建表结构。详见 [数据库建表 SQL](docs/Database-Schema.md)。
+
+### 数据库配置
+
+```yaml
+spring:
+  datasource:
+    url: jdbc:sqlite:knowledge.db
+    driver-class-name: org.sqlite.JDBC
+  jpa:
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    hibernate:
+      ddl-auto: update  # 自动创建/更新表结构
+    show-sql: false
 ```
 
 ---
@@ -432,10 +464,11 @@ A:
 
 ## 📚 更多文档
 
-- [金融计算指南](docs/Financial-Calculation-Guide.md)
-- [金融计算总结](docs/Financial-Summary.md)
-- [LLM Tool Calling 架构](docs/LLM-Tool-Calling-Architecture.md)
-- [混合模型架构指南](docs/Mixed-Model-Architecture-Guide.md)
+- [数据库建表 SQL](docs/Database-Schema.md) - 数据库表结构
+- [金融计算指南](docs/Financial-Calculation-Guide.md) - 金融计算功能
+- [金融计算总结](docs/Financial-Summary.md) - 金融计算总结
+- [LLM Tool Calling 架构](docs/LLM-Tool-Calling-Architecture.md) - 工具调用架构
+- [混合模型架构指南](docs/Mixed-Model-Architecture-Guide.md) - 混合模型配置
 
 ---
 
