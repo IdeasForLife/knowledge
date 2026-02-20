@@ -30,6 +30,36 @@ ollama:
   embedding-model: qwen3-embedding:0.6b
   timeout: 120s
 
+# 阿里云DashScope配置
+dashscope:
+  api-key: ${DASHSCOPE_API_KEY:your-api-key-here}
+  base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+  model: qwen-plus
+  timeout: 60s
+
+# 模型路由配置
+model-router:
+  # 路由策略：PERCENTAGE（百分比）或 BUSINESS_TYPE（业务类型）
+  strategy: PERCENTAGE
+  # 百分比配置（当strategy=PERCENTAGE时生效）
+  percentage:
+    # 阿里云模型百分比（0-100）
+    aliyun: 30
+    # 本地模型百分比（0-100）
+    local: 70
+  # 业务类型路由（当strategy=BUSINESS_TYPE时生效）
+  business-type:
+    # 使用阿里云模型的业务类型
+    aliyun-types:
+      - COMPLEX_QUERY      # 复杂查询
+      - LONG_CONTEXT       # 长上下文
+      - HIGH_PRECISION     # 高精度要求
+    # 使用本地模型的业务类型
+    local-types:
+      - SIMPLE_QA          # 简单问答
+      - TOOL_CALLING       # 工具调用
+      - GENERAL_CHAT       # 通用对话
+
 # Qdrant配置
 qdrant:
   host: localhost

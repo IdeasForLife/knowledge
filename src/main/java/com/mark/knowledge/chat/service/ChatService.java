@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 
 /**
  * 聊天服务 - 支持流式响应和SQLite存储
+ * 支持模型路由（阿里云/本地混合架构）
  */
 @Service
 public class ChatService {
@@ -38,19 +39,19 @@ public class ChatService {
     @Value("${rag.min-score:0.5}")
     private double minScore;
 
-    private final ChatModel chatModel;
+    private final ModelRouterService modelRouterService;
     private final EmbeddingModel embeddingModel;
     private final EmbeddingStore<TextSegment> embeddingStore;
     private final ChatMessageRepository chatMessageRepository;
     private final ObjectMapper objectMapper;
 
     public ChatService(
-            ChatModel chatModel,
+            ModelRouterService modelRouterService,
             EmbeddingModel embeddingModel,
             EmbeddingStore<TextSegment> embeddingStore,
             ChatMessageRepository chatMessageRepository,
             ObjectMapper objectMapper) {
-        this.chatModel = chatModel;
+        this.modelRouterService = modelRouterService;
         this.embeddingModel = embeddingModel;
         this.embeddingStore = embeddingStore;
         this.chatMessageRepository = chatMessageRepository;
@@ -137,8 +138,14 @@ public class ChatService {
                 // 构建提示词
                 String prompt = buildPrompt(context, historyContext.toString(), question);
 
+                // 智能路由到合适的模型
+                ModelRouterService.BusinessType businessType = modelRouterService.detectBusinessType(question);
+                ChatModel selectedModel = modelRouterService.routeModel(businessType);
+                log.info("检测到业务类型: {}, 使用模型: {}", businessType,
+                    selectedModel.getClass().getSimpleName().replace("ChatModel", ""));
+
                 // 生成回答（模拟流式输出）
-                String answer = chatModel.chat(prompt);
+                String answer = selectedModel.chat(prompt);
 
                 // 模拟流式输出 - 分批发送
                 simulateStreamOutput(answer, onChunk);

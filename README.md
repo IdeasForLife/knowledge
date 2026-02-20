@@ -74,6 +74,7 @@
 - Maven 3.9+
 - Ollama
 - Qdrant
+- 阿里云DashScope API Key（可选，用于混合模型架构）
 
 ### 安装运行
 
@@ -313,6 +314,173 @@ LLM：
 
 ---
 
+## 🌐 混合模型架构 ⭐
+
+### 功能特性
+
+- 🔄 **智能路由** - 根据策略自动选择云端或本地模型
+- 📊 **百分比路由** - 按比例分配请求到不同模型
+- 🎯 **业务类型路由** - 根据问题类型智能选择模型
+- ⚡ **性能优化** - 简单问题用本地模型，复杂问题用云端模型
+- 💰 **成本控制** - 灵活配置云端/本地模型使用比例
+
+### 支持的模型
+
+| 模型 | 提供商 | 用途 |
+|------|--------|------|
+| qwen2.5:7b | Ollama（本地） | 快速响应、工具调用、简单问答 |
+| qwen-plus | 阿里云DashScope | 复杂推理、长上下文、高精度要求 |
+
+### 路由策略
+
+#### 1. 百分比路由（PERCENTAGE）
+
+按配置的百分比分配请求：
+```yaml
+model-router:
+  strategy: PERCENTAGE
+  percentage:
+    aliyun: 30  # 30%请求使用阿里云
+    local: 70   # 70%请求使用本地模型
+```
+
+**适用场景**：
+- 控制API成本
+- 负载均衡
+- A/B测试
+
+#### 2. 业务类型路由（BUSINESS_TYPE）
+
+根据问题类型自动选择模型：
+```yaml
+model-router:
+  strategy: BUSINESS_TYPE
+  business-type:
+    aliyun-types:
+      - COMPLEX_QUERY    # 复杂查询
+      - LONG_CONTEXT     # 长上下文
+      - HIGH_PRECISION   # 高精度要求
+    local-types:
+      - SIMPLE_QA        # 简单问答
+      - TOOL_CALLING     # 工具调用
+      - GENERAL_CHAT     # 通用对话
+```
+
+**适用场景**：
+- 优化用户体验
+- 最大化模型性能
+- 智能资源分配
+
+### 配置示例
+
+```yaml
+# 阿里云DashScope配置
+dashscope:
+  api-key: ${DASHSCOPE_API_KEY}  # 从环境变量读取
+  base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+  model: qwen-plus
+  timeout: 60s
+
+# 模型路由配置
+model-router:
+  strategy: PERCENTAGE  # 或 BUSINESS_TYPE
+  percentage:
+    aliyun: 30
+    local: 70
+```
+
+### 智能业务类型检测
+
+系统会自动分析用户输入，检测业务类型：
+
+```java
+// 示例1：复杂查询 → 使用阿里云
+"请详细分析并比较这两种金融产品的优缺点"
+→ 检测到: COMPLEX_QUERY
+→ 路由到: 阿里云 qwen-plus
+
+// 示例2：工具调用 → 使用本地模型
+"计算IRR为5%的投资项目"
+→ 检测到: TOOL_CALLING
+→ 路由到: 本地 qwen2.5:7b
+
+// 示例3：长上下文 → 使用阿里云
+"这是一篇很长的文章（>200字），请总结..."
+→ 检测到: LONG_CONTEXT
+→ 路由到: 阿里云 qwen-plus
+
+// 示例4：简单问答 → 使用本地模型
+"今天天气怎么样？"
+→ 检测到: SIMPLE_QA
+→ 路由到: 本地 qwen2.5:7b
+```
+
+### 启用阿里云模型
+
+1. **获取API Key**：
+   - 访问 [阿里云DashScope](https://dashscope.aliyuncs.com/)
+   - 创建API Key
+
+2. **配置环境变量**：
+   ```bash
+   export DASHSCOPE_API_KEY=your-api-key-here
+   ```
+
+3. **修改配置文件**：
+   ```yaml
+   dashscope:
+     api-key: ${DASHSCOPE_API_KEY}
+   ```
+
+4. **重启应用**：
+   ```bash
+   mvn spring-boot:run
+   ```
+
+### 向量模型
+
+**重要**：向量嵌入模型继续使用本地Ollama（qwen3-embedding），不受路由策略影响。
+
+---
+
+## 💡 MCP文件系统功能 ⭐
+
+### 功能特性
+
+- 📎 **消息附件** - 在智能体对话中上传文件
+- 🔍 **文件读取** - LLM使用MCP工具读取上传的文件
+- 📝 **文件分析** - 结合知识库内容分析上传的文件
+- 🗂️ **智能路径** - 自动提取相对路径，确保LLM正确访问文件
+
+### MCP工具列表
+
+1. **readFile** - 读取文件内容（支持预览）
+2. **listDirectory** - 列出目录内容
+3. **searchFiles** - 搜索文件（按文件名和内容）
+4. **getFileInfo** - 获取文件详细信息
+
+### 使用示例
+
+```
+用户：上传信访相关文件
+系统：文件上传到 uploads/general/信访政策.txt
+
+用户：这里面的做法是不是符合信访的政策？
+LLM：
+1. 使用 readFile 读取 uploads/general/信访政策.txt
+2. 使用向量检索查询知识库中的信访政策
+3. 对比分析并回答：文件内容是否符合政策要求
+```
+
+### 安全特性
+
+- ✅ 路径限制 - 只能访问指定目录
+- ✅ 路径解析 - 防止目录遍历攻击
+- ✅ 文件大小限制 - 大文件自动截断预览
+- ✅ 对话隔离 - 文件按对话ID组织存储
+
+---
+
 ## 示例
 
 文件上传上传了三国演义里面部分用来测试，见：`/resources/三国演义34章.txt`，可以用来本地测试。
@@ -361,6 +529,33 @@ A:
 - 路径解析验证：防止目录遍历攻击
 - 相对路径处理：自动提取正确的相对路径
 - 对话隔离：不同对话的文件分开存储
+
+### Q: 如何选择合适的路由策略？⭐
+
+A:
+- **百分比路由**：适合控制成本和负载均衡，按固定比例分配
+- **业务类型路由**：适合优化性能，根据问题特点智能选择
+
+推荐：生产环境使用业务类型路由，测试环境使用百分比路由。
+
+### Q: 阿里云模型和本地模型如何选择？⭐
+
+A:
+- **本地模型（qwen2.5:7b）**：
+  - 优点：快速响应、无API费用、数据隐私
+  - 适用：简单问答、工具调用、通用对话
+
+- **阿里云模型（qwen-plus）**：
+  - 优点：推理能力强、支持长上下文
+  - 适用：复杂查询、高精度要求、长文本分析
+
+### Q: 能只使用本地模型吗？⭐
+
+A: 可以。只需不配置 `dashscope.api-key` 或保持默认值 `your-api-key-here`，系统会自动使用本地模型。
+
+### Q: 向量模型也走混合架构吗？⭐
+
+A: 不是。向量嵌入模型固定使用本地Ollama（qwen3-embedding），不受路由策略影响。这是因为向量嵌入需要消耗大量Token，使用本地模型更经济。
 
 ---
 
