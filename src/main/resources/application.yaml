@@ -44,9 +44,9 @@ model-router:
   # 百分比配置（当strategy=PERCENTAGE时生效）
   percentage:
     # 阿里云模型百分比（0-100）
-    aliyun: 30
+    aliyun: 100
     # 本地模型百分比（0-100）
-    local: 70
+    local: 0
   # 业务类型路由（当strategy=BUSINESS_TYPE时生效）
   business-type:
     # 使用阿里云模型的业务类型

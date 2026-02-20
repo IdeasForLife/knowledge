@@ -4,6 +4,7 @@ import dev.langchain4j.model.chat.ChatModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -26,9 +27,11 @@ public class ModelRouterService {
     private static final Logger log = LoggerFactory.getLogger(ModelRouterService.class);
 
     @Autowired
+    @Qualifier("chatModel")
     private ChatModel ollamaChatModel;
 
     @Autowired(required = false)
+    @Qualifier("dashscopeChatModel")
     private ChatModel dashscopeChatModel;
 
     @Value("${model-router.strategy:PERCENTAGE}")
@@ -100,7 +103,7 @@ public class ModelRouterService {
     private ChatModel routeByPercentage() {
         // 如果没有配置阿里云模型，直接使用本地模型
         if (dashscopeChatModel == null) {
-            log.debug("阿里云模型未配置，使用本地模型");
+            log.warn("⚠️  阿里云模型未配置，使用本地Ollama模型 (检查dashscope.api-key配置)");
             return ollamaChatModel;
         }
 
@@ -108,10 +111,10 @@ public class ModelRouterService {
         int rand = random.nextInt(100);
 
         if (rand < aliyunPercentage) {
-            log.debug("路由到阿里云模型 (随机值: {} < {}%)", rand, aliyunPercentage);
+            log.info("📡 路由到阿里云DashScope模型 (随机值: {} < {}%)", rand, aliyunPercentage);
             return dashscopeChatModel;
         } else {
-            log.debug("路由到本地模型 (随机值: {} >= {}%)", rand, aliyunPercentage);
+            log.info("💻 路由到本地Ollama模型 (随机值: {} >= {}%)", rand, aliyunPercentage);
             return ollamaChatModel;
         }
     }

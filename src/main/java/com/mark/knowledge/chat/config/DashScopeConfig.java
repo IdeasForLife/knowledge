@@ -17,7 +17,7 @@ import org.springframework.context.annotation.Configuration;
  * @author mark
  */
 @Configuration
-@ConditionalOnProperty(name = "dashscope.api-key", havingValue = "your-api-key-here", matchIfMissing = false)
+@ConditionalOnProperty(name = "dashscope.api-key", matchIfMissing = false)
 public class DashScopeConfig {
 
     private static final Logger log = LoggerFactory.getLogger(DashScopeConfig.class);
@@ -40,10 +40,20 @@ public class DashScopeConfig {
      */
     @Bean
     public ChatModel dashscopeChatModel() {
+        // 检查API key是否为默认值
+        if ("your-api-key-here".equals(apiKey)) {
+            log.error("==========================================");
+            log.error("⚠️  阿里云DashScope API Key未配置！");
+            log.error("  请在application.yaml中设置真实API Key");
+            log.error("  或设置环境变量: DASHSCOPE_API_KEY");
+            log.error("==========================================");
+        }
+
         log.info("==========================================");
-        log.info("初始化阿里云DashScope聊天模型");
+        log.info("✅ 初始化阿里云DashScope聊天模型");
         log.info("  模型: {}", modelName);
         log.info("  URL: {}", baseUrl);
+        log.info("  API Key: {}...", apiKey.substring(0, Math.min(10, apiKey.length())));
         log.info("==========================================");
 
         return OpenAiChatModel.builder()

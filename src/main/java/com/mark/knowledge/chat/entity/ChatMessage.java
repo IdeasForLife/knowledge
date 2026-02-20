@@ -17,6 +17,9 @@ public class ChatMessage {
     @Column(name = "conversation_id", nullable = false)
     private String conversationId;
 
+    @Column(name = "user_id")
+    private Long userId;
+
     @Column(name = "role", nullable = false)
     private String role; // "user" or "assistant"
 
@@ -33,7 +36,19 @@ public class ChatMessage {
     public ChatMessage() {
     }
 
+    // New constructor with userId
+    public ChatMessage(Long userId, String conversationId, String role, String content, String sources) {
+        this.userId = userId;
+        this.conversationId = conversationId;
+        this.role = role;
+        this.content = content;
+        this.sources = sources;
+        this.createdAt = LocalDateTime.now();
+    }
+
+    // Backward-compatible constructor without userId (userId will be null)
     public ChatMessage(String conversationId, String role, String content, String sources) {
+        this.userId = null;  // No user associated
         this.conversationId = conversationId;
         this.role = role;
         this.content = content;
@@ -61,6 +76,14 @@ public class ChatMessage {
 
     public void setConversationId(String conversationId) {
         this.conversationId = conversationId;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     public String getRole() {

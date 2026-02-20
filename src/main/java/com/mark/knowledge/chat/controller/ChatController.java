@@ -2,7 +2,9 @@ package com.mark.knowledge.chat.controller;
 
 import com.mark.knowledge.chat.dto.ChatRequest;
 import com.mark.knowledge.chat.entity.ChatMessage;
+import com.mark.knowledge.chat.service.AuthService;
 import com.mark.knowledge.chat.service.ChatService;
+import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
@@ -25,9 +27,23 @@ public class ChatController {
     private static final Logger log = LoggerFactory.getLogger(ChatController.class);
 
     private final ChatService chatService;
+    private final AuthService authService;
 
-    public ChatController(ChatService chatService) {
+    public ChatController(ChatService chatService, AuthService authService) {
         this.chatService = chatService;
+        this.authService = authService;
+    }
+
+    /**
+     * 获取当前登录用户ID
+     */
+    private Long getCurrentUserId(HttpSession session) {
+        Long userId = authService.getCurrentUserId(session);
+        if (userId == null) {
+            log.warn("未登录用户尝试访问聊天功能");
+            return null;
+        }
+        return userId;
     }
 
     /**
@@ -37,15 +53,28 @@ public class ChatController {
      * @return 流式响应
      */
     @PostMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<ServerSentEvent<String>> streamChat(@RequestBody ChatRequest request) {
+    public Flux<ServerSentEvent<String>> streamChat(@RequestBody ChatRequest request, HttpSession session) {
 
-        log.info("收到流式聊天请求: question='{}', conversationId={}", request.question(), request.conversationId());
+        Long userId = getCurrentUserId(session);
+        if (userId == null) {
+            // 返回错误消息
+            Sinks.Many<ServerSentEvent<String>> errorSink = Sinks.many().multicast().onBackpressureBuffer();
+            errorSink.tryEmitNext(ServerSentEvent.<String>builder()
+                    .event("error")
+                    .data("请先登录")
+                    .build());
+            errorSink.tryEmitComplete();
+            return errorSink.asFlux();
+        }
+
+        log.info("收到流式聊天请求: userId={}, question='{}', conversationId={}", userId, request.question(), request.conversationId());
 
         // 使用 Sinks 处理跨线程的 SSE 发送
         Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().multicast().onBackpressureBuffer();
 
         // 在异步线程中处理
         chatService.chatAsync(
+            userId,
             request.question(),
             request.conversationId(),
             // onChunk
@@ -85,9 +114,14 @@ public class ChatController {
      * @return 聊天历史消息列表
      */
     @GetMapping("/history/{conversationId}")
-    public List<ChatMessage> getHistory(@PathVariable String conversationId) {
-        log.info("获取对话历史: {}", conversationId);
-        return chatService.getChatHistory(conversationId);
+    public List<ChatMessage> getHistory(@PathVariable String conversationId, HttpSession session) {
+        Long userId = getCurrentUserId(session);
+        if (userId == null) {
+            log.warn("未登录用户尝试获取对话历史: {}", conversationId);
+            return List.of();
+        }
+        log.info("获取对话历史: userId={}, conversationId={}", userId, conversationId);
+        return chatService.getChatHistory(userId, conversationId);
     }
 
     /**
@@ -96,9 +130,14 @@ public class ChatController {
      * @return 对话ID列表
      */
     @GetMapping("/conversations")
-    public List<String> getAllConversations() {
-        log.info("获取所有对话列表");
-        return chatService.getAllConversationIds();
+    public List<String> getAllConversations(HttpSession session) {
+        Long userId = getCurrentUserId(session);
+        if (userId == null) {
+            log.warn("未登录用户尝试获取对话列表");
+            return List.of();
+        }
+        log.info("获取用户对话列表: userId={}", userId);
+        return chatService.getAllConversationIds(userId);
     }
 
     /**

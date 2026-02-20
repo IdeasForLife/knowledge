@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 public class ChatService {
 
     private static final Logger log = LoggerFactory.getLogger(ChatService.class);
+    private static final String CONVERSATION_ID_PREFIX = "chat-";
 
     @Value("${rag.max-results:5}")
     private int maxResults;
@@ -59,24 +60,28 @@ public class ChatService {
     }
 
     /**
-     * 获取所有会话ID
+     * 获取所有会话ID（按用户过滤和前缀过滤）
      */
-    public List<String> getAllConversationIds() {
-        return chatMessageRepository.findAllConversationIds();
+    public List<String> getAllConversationIds(Long userId) {
+        return chatMessageRepository.findConversationIdsByUserIdAndPrefix(userId, CONVERSATION_ID_PREFIX);
     }
 
     /**
-     * 获取指定会话的聊天历史
+     * 获取指定会话的聊天历史（带用户验证）
      */
-    public List<ChatMessage> getChatHistory(String conversationId) {
-        return chatMessageRepository.findByConversationIdOrderByCreatedAtAsc(conversationId);
+    public List<ChatMessage> getChatHistory(Long userId, String conversationId) {
+        List<ChatMessage> messages = chatMessageRepository.findByConversationIdOrderByCreatedAtAsc(conversationId);
+        // 过滤：只返回属于当前用户或没有用户的消息
+        return messages.stream()
+                .filter(msg -> msg.getUserId() == null || msg.getUserId().equals(userId))
+                .collect(Collectors.toList());
     }
 
     /**
-     * 异步聊天 - 支持流式回调
+     * 异步聊天 - 支持流式回调（带用户ID）
      */
     @Transactional
-    public void chatAsync(String question, String conversationId,
+    public void chatAsync(Long userId, String question, String conversationId,
                           Consumer<String> onChunk,
                           Consumer<String> onComplete,
                           Consumer<Exception> onError) {
@@ -84,10 +89,11 @@ public class ChatService {
         CompletableFuture.runAsync(() -> {
             try {
                 // 创建新的会话ID
-                String finalConversationId = conversationId != null ? conversationId : UUID.randomUUID().toString();
+                // 如果是新建对话，添加chat-前缀；如果是继续对话，保持原ID
+                String finalConversationId = conversationId != null ? conversationId : CONVERSATION_ID_PREFIX + UUID.randomUUID().toString();
 
-                // 保存用户消息
-                ChatMessage userMessage = new ChatMessage(finalConversationId, "user", question, null);
+                // 保存用户消息（带用户ID）
+                ChatMessage userMessage = new ChatMessage(userId, finalConversationId, "user", question, null);
                 chatMessageRepository.save(userMessage);
 
                 // 嵌入问题
@@ -141,16 +147,52 @@ public class ChatService {
                 // 智能路由到合适的模型
                 ModelRouterService.BusinessType businessType = modelRouterService.detectBusinessType(question);
                 ChatModel selectedModel = modelRouterService.routeModel(businessType);
-                log.info("检测到业务类型: {}, 使用模型: {}", businessType,
-                    selectedModel.getClass().getSimpleName().replace("ChatModel", ""));
 
-                // 生成回答（模拟流式输出）
+                // 判断模型类型 - 使用更可靠的判断方式
+                String modelClassName = selectedModel.getClass().getName();
+                boolean isAliyunModel = modelClassName.contains("OpenAiChatModel");
+
+                // 记录调用开始
+                long startTime = System.currentTimeMillis();
+                log.info("==========================================");
+                log.info("🤖 大模型调用开始");
+                log.info("  🎯 模型类型: {}", isAliyunModel ? "☁️  阿里云DashScope (云端API)" : "💻 本地Ollama");
+                log.info("  📦 模型类名: {}", modelClassName);
+                log.info("  📊 业务类型: {}", businessType);
+                log.info("  📝 输入长度: {} 字符", prompt.length());
+                log.info("==========================================");
+
+                // 生成回答
                 String answer = selectedModel.chat(prompt);
+
+                long endTime = System.currentTimeMillis();
+                long responseTime = endTime - startTime;
+
+                // 记录调用结束和统计信息
+                if (isAliyunModel) {
+                    int inputTokens = estimateTokens(prompt);
+                    int outputTokens = estimateTokens(answer);
+                    int totalTokens = inputTokens + outputTokens;
+
+                    log.info("==========================================");
+                    log.info("📊 Token消耗统计");
+                    log.info("  输入Token: {}", inputTokens);
+                    log.info("  输出Token: {}", outputTokens);
+                    log.info("  总计Token: {}", totalTokens);
+                    log.info("  响应时间: {} ms", responseTime);
+                    log.info("==========================================");
+                } else {
+                    log.info("==========================================");
+                    log.info("✅ 本地模型响应完成");
+                    log.info("  输出长度: {} 字符", answer.length());
+                    log.info("  响应时间: {} ms", responseTime);
+                    log.info("==========================================");
+                }
 
                 // 模拟流式输出 - 分批发送
                 simulateStreamOutput(answer, onChunk);
 
-                // 保存助手消息
+                // 保存助手消息（带用户ID）
                 String sourcesJson = null;
                 if (!sources.isEmpty()) {
                     try {
@@ -160,7 +202,7 @@ public class ChatService {
                     }
                 }
 
-                ChatMessage assistantMessage = new ChatMessage(finalConversationId, "assistant", answer, sourcesJson);
+                ChatMessage assistantMessage = new ChatMessage(userId, finalConversationId, "assistant", answer, sourcesJson);
                 chatMessageRepository.save(assistantMessage);
 
                 // 回调完成
@@ -271,5 +313,34 @@ public class ChatService {
         public void setScore(double score) {
             this.score = score;
         }
+    }
+
+    /**
+     * 估算文本的Token数量
+     * 粗略估算：中文约1个字符=0.7个token，英文约1个单词=1个token
+     */
+    private int estimateTokens(String text) {
+        if (text == null || text.isEmpty()) {
+            return 0;
+        }
+
+        int chineseChars = 0;
+        int englishWords = 0;
+
+        // 统计中文字符和英文单词
+        String[] words = text.split("\\s+");
+        for (String word : words) {
+            // 检查是否包含中文
+            if (word.matches(".*[\\u4e00-\\u9fa5]+.*")) {
+                // 中文字符，每个字符约0.7个token
+                chineseChars += word.length();
+            } else {
+                // 英文单词，每个单词约1个token
+                englishWords++;
+            }
+        }
+
+        // 粗略计算：中文字符 * 0.7 + 英文单词数
+        return (int) (chineseChars * 0.7) + englishWords;
     }
 }

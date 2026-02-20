@@ -3,12 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>智能体对话 - Agent Chat</title>
+    <title>NexusMind 智能体对话</title>
 
     <!-- KaTeX CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 
     <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --primary-color: #667eea;
+            --primary-dark: #5568d3;
+            --secondary-color: #764ba2;
+            --accent-color: #f093fb;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --error-color: #ef4444;
+            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -16,71 +28,171 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", sans-serif;
+            background: var(--bg-gradient);
+            background-attachment: fixed;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
         }
 
         .nav {
-            background: rgba(255, 255, 255, 0.98);
-            backdrop-filter: blur(10px);
-            padding: 15px 25px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 12px 30px;
+            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.15);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
         }
 
         .nav-left {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
         }
 
         .nav-icon {
-            font-size: 26px;
+            font-size: 28px;
+            filter: drop-shadow(0 2px 4px rgba(102, 126, 234, 0.3));
         }
 
         .nav h1 {
-            font-size: 1.3rem;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-size: 1.4rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 60%, #f093fb 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             font-weight: 800;
+            letter-spacing: -0.5px;
+            filter: drop-shadow(0 2px 4px rgba(102, 126, 234, 0.2));
         }
 
         .nav-links {
             display: flex;
-            gap: 6px;
+            gap: 4px;
         }
 
         .nav-links a {
-            margin-left: 8px;
+            margin-left: 6px;
             text-decoration: none;
             color: #555;
             font-weight: 600;
-            padding: 8px 16px;
-            border-radius: 10px;
-            transition: all 0.3s ease;
+            padding: 10px 18px;
+            border-radius: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             font-size: 13px;
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-links a::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--primary-gradient);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            border-radius: 12px;
         }
 
         .nav-links a:hover {
-            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
-            color: #667eea;
-            transform: translateY(-1px);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25);
+        }
+
+        .nav-links a:hover::before {
+            opacity: 0.1;
         }
 
         .nav-links a.active {
+            background: var(--primary-gradient);
+            color: white;
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .nav-links a span {
+            position: relative;
+            z-index: 1;
+        }
+
+        .nav-auth {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .login-form {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .login-form input {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+            width: 120px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .login-form input:focus {
+            border-color: #667eea;
+        }
+
+        .login-form button {
+            padding: 6px 16px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            box-shadow: 0 3px 12px rgba(102, 126, 234, 0.35);
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: transform 0.2s;
+        }
+
+        .login-form button:hover {
+            transform: scale(1.05);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .username {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .logout-btn {
+            padding: 6px 16px;
+            background: #f5f5f5;
+            color: #666;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: #e8e8e8;
+            color: #dc3545;
         }
 
         .chat-container {
@@ -700,13 +812,27 @@
     <div class="nav">
         <div class="nav-left">
             <span class="nav-icon">✨</span>
-            <h1>智能知识库</h1>
+            <h1>NexusMind</h1>
         </div>
         <div class="nav-links">
-            <a href="chat.html">💬 智能问答</a>
-            <a href="agent-chat.html" class="active">智能体对话</a>
-            <a href="domain.html">📚 领域文档</a>
-            <a href="qdrant.html">🗂️ Qdrant管理</a>
+            <a href="chat.html"><span>💬 智能问答</span></a>
+            <a href="agent-chat.html" class="active"><span>🤖 智能体对话</span></a>
+            <a href="domain.html"><span>📚 领域文档</span></a>
+            <a href="qdrant.html"><span>🗂️ 向量管理</span></a>
+        </div>
+        <div class="nav-auth" id="authSection">
+            <!-- 未登录状态 -->
+            <div id="loginForm" class="login-form">
+                <input type="text" id="username" placeholder="用户名" value="mark">
+                <input type="password" id="password" placeholder="密码" value="mark">
+                <button onclick="login()">登录</button>
+            </div>
+
+            <!-- 已登录状态 -->
+            <div id="userInfo" class="user-info" style="display: none;">
+                <span class="username"></span>
+                <button class="logout-btn" onclick="logout()">退出</button>
+            </div>
         </div>
     </div>
 
@@ -852,14 +978,25 @@
         // 加载对话列表
         async function loadConversations() {
             try {
-                const response = await fetch('/api/agent-chat/conversations');
+                const response = await fetch('/api/agent-chat/conversations', {
+                    credentials: 'include'
+                });
+
+                // 如果返回 401，说明未登录
+                if (response.status === 401) {
+                    showLoginForm();
+                    return;
+                }
+
                 conversations = await response.json();
 
                 // 加载每个对话的标题（第一条用户消息）
                 for (const convId of conversations) {
                     if (!conversationTitles[convId]) {
                         try {
-                            const historyResponse = await fetch(`/api/agent-chat/history/${convId}`);
+                            const historyResponse = await fetch(`/api/agent-chat/history/${convId}`, {
+                                credentials: 'include'
+                            });
                             const messages = await historyResponse.json();
                             const firstUserMessage = messages.find(m => m.role === 'user');
                             if (firstUserMessage) {
@@ -947,7 +1084,8 @@
 
             try {
                 const response = await fetch(`/api/agent-chat/conversations/${conversationId}`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    credentials: 'include'
                 });
 
                 if (response.ok) {
@@ -1024,7 +1162,9 @@
             try {
                 currentConversationId = conversationId;
 
-                const response = await fetch(`/api/agent-chat/history/${conversationId}`);
+                const response = await fetch(`/api/agent-chat/history/${conversationId}`, {
+                    credentials: 'include'
+                });
                 const messages = await response.json();
 
                 // 提取第一条用户消息作为标题
@@ -1053,6 +1193,13 @@
         }
 
         async function sendMessage() {
+            // 检查是否登录
+            const authCheck = await fetch('/api/auth/check-auth').then(r => r.json());
+            if (!authCheck.success) {
+                showError('请先登录');
+                return;
+            }
+
             const question = messageInput.value.trim();
             if (!question) return;
 
@@ -1142,6 +1289,7 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
+                    credentials: 'include',  // 重要：包含Session cookie
                     body: JSON.stringify({
                         message: finalMessage,
                         conversationId: currentConversationId || null,
@@ -1480,8 +1628,14 @@
             attachmentPreview.style.display = 'none';
         }
 
-        // 页面加载时初始化
-        loadConversations();
+        // ========== 页面特定的认证回调 ==========
+        window.onShowUserInfo = function(username) {
+            loadConversations();
+        };
+
+        window.onShowLoginForm = function() {
+            conversationList.innerHTML = '<div style="color: #999; font-size: 13px; text-align: center; padding: 20px;">请先登录</div>';
+        };
 
         // 快捷测试功能
         async function quickTest(type) {
@@ -1501,6 +1655,9 @@
             sendMessage();
         }
     </script>
+
+    <!-- 引入认证管理脚本 -->
+    <script src="/js/auth.js"></script>
 
     <!-- KaTeX JS - 不使用 defer，确保立即加载 -->
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>

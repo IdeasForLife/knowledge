@@ -26,6 +26,18 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     List<String> findAllConversationIds();
 
     /**
+     * 查询用户的所有会话ID
+     */
+    @Query("SELECT DISTINCT m.conversationId FROM ChatMessage m WHERE m.userId = :userId ORDER BY m.createdAt DESC")
+    List<String> findConversationIdsByUserId(@Param("userId") Long userId);
+
+    /**
+     * 查询用户的指定前缀的会话ID
+     */
+    @Query("SELECT DISTINCT m.conversationId FROM ChatMessage m WHERE m.userId = :userId AND m.conversationId LIKE :prefix || '%' ORDER BY m.createdAt DESC")
+    List<String> findConversationIdsByUserIdAndPrefix(@Param("userId") Long userId, @Param("prefix") String prefix);
+
+    /**
      * 删除指定会话的所有消息
      */
     void deleteByConversationId(String conversationId);
@@ -44,4 +56,9 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
         @Param("conversationId") String conversationId,
         @Param("limit") int limit
     );
+
+    /**
+     * 删除用户的所有消息
+     */
+    void deleteByUserId(Long userId);
 }

@@ -3,8 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>智能问答 - 知识库</title>
+    <title>NexusMind 💬 智能问答</title>
     <style>
+
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            --primary-color: #667eea;
+            --primary-dark: #5568d3;
+            --secondary-color: #764ba2;
+            --accent-color: #f093fb;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --error-color: #ef4444;
+            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -13,7 +26,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--bg-gradient);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -41,7 +54,7 @@
 
         .nav h1 {
             font-size: 1.3rem;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--bg-gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -74,9 +87,77 @@
         }
 
         .nav-links a.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--bg-gradient);
             color: white;
             box-shadow: 0 3px 12px rgba(102, 126, 234, 0.35);
+        }
+
+        .nav-auth {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .login-form {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .login-form input {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+            width: 120px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .login-form input:focus {
+            border-color: #667eea;
+        }
+
+        .login-form button {
+            padding: 6px 16px;
+            background: var(--bg-gradient);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: transform 0.2s;
+        }
+
+        .login-form button:hover {
+            transform: scale(1.05);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .username {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .logout-btn {
+            padding: 6px 16px;
+            background: #f5f5f5;
+            color: #666;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: #e8e8e8;
+            color: #dc3545;
         }
 
         .chat-container {
@@ -366,14 +447,25 @@
     <div class="nav">
         <div class="nav-left">
             <span class="nav-icon">✨</span>
-            <h1>智能知识库</h1>
+            <h1>NexusMind</h1>
         </div>
         <div class="nav-links">
-            <a href="upload.html">📄 文件上传</a>
-            <a href="chat.html" class="active">💬 智能问答</a>
-            <a href="agent-chat.html">智能体对话</a>
-            <a href="domain.html">📚 领域文档</a>
-            <a href="qdrant.html">🗂️ Qdrant管理</a>
+            <a href="upload.html"><span>📄 文档上传</span></a>
+            <a href="chat.html" class="active"><span>💬 智能问答</span></a>
+            <a href="agent-chat.html"><span>🤖 智能体</span></a>
+            <a href="domain.html"><span>📚 领域文档</span></a>
+            <a href="qdrant.html"><span>🗂️ 向量管理</span></a>
+        </div>
+        <div class="nav-auth" id="authSection">
+            <div id="loginForm" class="login-form">
+                <input type="text" id="username" placeholder="用户名" value="mark">
+                <input type="password" id="password" placeholder="密码" value="mark">
+                <button type="button" onclick="login()">登录</button>
+            </div>
+            <div id="userInfo" class="user-info" style="display: none;">
+                <span class="username">用户</span>
+                <button class="logout-btn" type="button" onclick="logout()">退出</button>
+            </div>
         </div>
     </div>
 
@@ -439,15 +531,22 @@
 
         // 加载对话列表
         async function loadConversations() {
+            console.log('[Chat] Loading conversations...');
             try {
-                const response = await fetch('/api/chat/conversations');
+                const response = await fetch('/api/chat/conversations', {
+                    credentials: 'include'
+                });
+                console.log('[Chat] Response status:', response.status);
                 conversations = await response.json();
+                console.log('[Chat] Loaded conversations:', conversations.length, 'conversations');
 
                 // 加载每个对话的标题（第一条用户消息）
                 for (const convId of conversations) {
                     if (!conversationTitles[convId]) {
                         try {
-                            const historyResponse = await fetch(`/api/chat/history/${convId}`);
+                            const historyResponse = await fetch(`/api/chat/history/${convId}`, {
+                                credentials: 'include'
+                            });
                             const messages = await historyResponse.json();
                             const firstUserMessage = messages.find(m => m.role === 'user');
                             if (firstUserMessage) {
@@ -500,7 +599,9 @@
             try {
                 currentConversationId = conversationId;
 
-                const response = await fetch(`/api/chat/history/${conversationId}`);
+                const response = await fetch(`/api/chat/history/${conversationId}`, {
+                    credentials: 'include'
+                });
                 const messages = await response.json();
 
                 // 提取第一条用户消息作为标题
@@ -564,6 +665,7 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
+                    credentials: 'include',  // 重要：包含Session cookie
                     body: JSON.stringify({
                         question: question,
                         conversationId: currentConversationId || null
@@ -686,7 +788,22 @@
         }
 
         // 页面加载时初始化
-        loadConversations();
+        // loadConversations(); // 改为登录后自动加载
+
+        // ========== 页面特定的认证回调 ==========
+        window.onShowUserInfo = function(username) {
+            console.log('[Chat] onShowUserInfo called with username:', username);
+            loadConversations();
+        };
+
+        window.onShowLoginForm = function() {
+            console.log('[Chat] onShowLoginForm called');
+            conversationList.innerHTML = '<div style="color: #999; font-size: 13px; text-align: center; padding: 20px;">请先登录</div>';
+        };
     </script>
+
+    <!-- 引入认证管理脚本 -->
+    <script src="/js/auth.js"></script>
 </body>
+</html>
 </html>
