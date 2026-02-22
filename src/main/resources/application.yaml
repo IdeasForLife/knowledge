@@ -101,3 +101,9 @@ logging:
     root: INFO
     com.mark.knowledge: DEBUG
     dev.langchain4j: DEBUG
+
+# Gitlab配置
+gitlab:
+  url: http://localhost/
+  token: glpat-4NEjJtyx02zeK5TD4TBYZ286MQp1OjMH.01.0w0pb89ai
+

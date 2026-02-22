@@ -471,7 +471,59 @@ A:
 - [混合模型架构指南](docs/Mixed-Model-Architecture-Guide.md) - 混合模型配置
 
 ---
+## gitlab
+com.mark.knowledge.gitlab/                                                                                            
+├── config/
+│   └── GitlabConfig.java          # GitLab配置类
+├── dto/
+│   ├── GitlabBranch.java          # 分支信息
+│   ├── GitlabCommit.java          # 提交信息
+│   ├── GitlabCommitStats.java     # 提交统计
+│   ├── GitlabDiff.java            # 代码差异
+│   ├── GitlabFileChange.java      # 文件变更
+│   ├── GitlabMergeRequest.java    # 合并请求
+│   ├── GitlabMilestone.java       # 里程碑
+│   ├── GitlabPipeline.java        # 流水线
+│   ├── GitlabReferences.java      # 引用信息
+│   └── GitlabUser.java            # 用户信息
+├── GitlabUtil.java                # GitLab API工具类
+└── controller/
+└── GitlabController.java      # REST API控制器
 
+com.mark.knowledge.agent.service/
+└── GitlabService.java             # GitLab Agent服务（带@Tool注解）
+
+GitlabService - Agent工具方法
+
+┌─────────────────────────────────────────────────────┬──────────────────┐
+│                        方法                         │       功能       │
+├─────────────────────────────────────────────────────┼──────────────────┤
+│ testGitlabConnection()                              │ 测试GitLab连接   │
+├─────────────────────────────────────────────────────┼──────────────────┤
+│ getProjectId(projectPath)                           │ 获取项目ID       │
+├─────────────────────────────────────────────────────┼──────────────────┤
+│ getProjectBranches(projectIdOrPath)                 │ 获取分支列表     │
+├─────────────────────────────────────────────────────┼──────────────────┤
+│ getDefaultBranch(projectIdOrPath)                   │ 获取默认分支     │
+├─────────────────────────────────────────────────────┼──────────────────┤
+│ getCommitHistory(projectIdOrPath, branch, limit)    │ 获取提交历史     │
+├─────────────────────────────────────────────────────┼──────────────────┤
+│ getCommitDetails(projectIdOrPath, sha)              │ 获取提交详情     │
+├─────────────────────────────────────────────────────┼──────────────────┤
+│ getCommitDiff(projectIdOrPath, sha)                 │ 获取提交差异     │
+├─────────────────────────────────────────────────────┼──────────────────┤
+│ getMergeRequests(projectIdOrPath, state, limit)     │ 获取MR列表       │
+├─────────────────────────────────────────────────────┼──────────────────┤
+│ getMergeRequestDetails(projectIdOrPath, iid)        │ 获取MR详情       │
+├─────────────────────────────────────────────────────┼──────────────────┤
+│ getMergeRequestChanges(projectIdOrPath, iid)        │ 获取MR变更       │
+├─────────────────────────────────────────────────────┼──────────────────┤
+│ getMergeRequestCommits(projectIdOrPath, iid)        │ 获取MR提交       │
+├─────────────────────────────────────────────────────┼──────────────────┤
+│ getRecentCodeChanges(projectIdOrPath, branch, days) │ 获取最近代码变更 │
+├─────────────────────────────────────────────────────┼──────────────────┤
+│ analyzeMergeRequest(projectIdOrPath, iid)           │ 分析MR代码       │
+└─────────────────────────────────────────────────────┴──────────────────┘
 <div align="center">
 
 **如果这个项目对你有帮助，请给一个 ⭐️**
