@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: knowledge-data-pvc
+  namespace: knowledge
+spec:
+  # 使用storageClass，Docker Desktop K8s自动提供
+  storageClassName: standard
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi

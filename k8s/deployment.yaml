@@ -1,0 +1,134 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: knowledge
+  namespace: knowledge
+  labels:
+    app: knowledge
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: knowledge
+  template:
+    metadata:
+      labels:
+        app: knowledge
+    spec:
+      containers:
+      - name: knowledge
+        image: knowledge:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+
+        env:
+        # 从ConfigMap注入环境变量
+        - name: SPRING_PROFILES_ACTIVE
+          valueFrom:
+            configMapKeyRef:
+              name: knowledge-config
+              key: SPRING_PROFILES_ACTIVE
+        - name: TZ
+          valueFrom:
+            configMapKeyRef:
+              name: knowledge-config
+              key: TZ
+
+        # Ollama配置
+        - name: OLLAMA_BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: knowledge-config
+              key: OLLAMA_BASE_URL
+        - name: OLLAMA_CHAT_MODEL
+          valueFrom:
+            configMapKeyRef:
+              name: knowledge-config
+              key: OLLAMA_CHAT_MODEL
+        - name: OLLAMA_EMBEDDING_MODEL
+          valueFrom:
+            configMapKeyRef:
+              name: knowledge-config
+              key: OLLAMA_EMBEDDING_MODEL
+        - name: OLLAMA_TIMEOUT
+          valueFrom:
+            configMapKeyRef:
+              name: knowledge-config
+              key: OLLAMA_TIMEOUT
+
+        # Qdrant配置
+        - name: QDRANT_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: knowledge-config
+              key: QDRANT_HOST
+        - name: QDRANT_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: knowledge-config
+              key: QDRANT_PORT
+        - name: QDRANT_HTTP_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: knowledge-config
+              key: QDRANT_HTTP_PORT
+
+        # DashScope API Key (从Secret)
+        - name: DASHSCOPE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: knowledge-secret
+              key: dashscope-api-key
+
+        # GitLab Token (从Secret)
+        - name: GITLAB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: knowledge-secret
+              key: gitlab-token
+
+        # JVM参数
+        - name: JAVA_OPTS
+          value: "-Xmx1g -Xms512m"
+
+        # 数据持久化
+        volumeMounts:
+        - name: knowledge-data
+          mountPath: /app/data
+
+        # 健康检查
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+
+      volumes:
+        - name: knowledge-data
+          emptyDir: {}   # 临时存储，Pod 删除即丢
+
+      # 重启策略
+      restartPolicy: Always

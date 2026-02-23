@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: knowledge-config
+  namespace: knowledge
+data:
+  # Spring配置
+  SPRING_PROFILES_ACTIVE: "k8s"
+  TZ: "Asia/Shanghai"
+
+  # Ollama配置 (访问宿主机服务)
+  OLLAMA_BASE_URL: "http://host.docker.internal:11434"
+  OLLAMA_CHAT_MODEL: "qwen2.5:7b"
+  OLLAMA_EMBEDDING_MODEL: "qwen3-embedding:0.6b"
+  OLLAMA_TIMEOUT: "120s"
+
+  # Qdrant配置 (访问宿主机服务)
+  QDRANT_HOST: "host.docker.internal"
+  QDRANT_PORT: "6334"
+  QDRANT_HTTP_PORT: "6333"
+  QDRANT_COLLECTION_NAME: "knowledge-base"
+  QDRANT_VECTOR_SIZE: "1024"
+  QDRANT_CREATE_COLLECTION_IF_NOT_EXISTS: "true"
+
+  # RAG配置
+  RAG_CHUNK_SIZE: "500"
+  RAG_CHUNK_OVERLAP: "50"
+  RAG_MAX_RESULTS: "5"
+  RAG_MIN_SCORE: "0.5"
+
+  # Agent配置
+  AGENT_CONTEXT_WINDOW_SIZE: "10"
+  AGENT_VECTOR_STORE_ENABLED: "true"
+  AGENT_MCP_FILE_ENABLED: "true"
+  AGENT_TOOL_CALL_ENABLED: "true"
+  AGENT_VECTOR_MAX_RESULTS: "5"
+  AGENT_VECTOR_MIN_SCORE: "0.5"
+  AGENT_TIMEOUT_SECONDS: "120"
+
+  # Gitlab配置
+  GITLAB_URL: "http://gitlab.example.com/"
+  # GITLAB_TOKEN 在 Secret 中配置
+
+  # 日志配置
+  LOGGING_LEVEL_ROOT: "INFO"
+  LOGGING_LEVEL_APP: "DEBUG"
+  LOGGING_LEVEL_LANGCHAIN4J: "DEBUG"
+
+  # 模型路由配置
+  MODEL_ROUTER_STRATEGY: "PERCENTAGE"
+  MODEL_ROUTER_PERCENTAGE_ALIYUN: "100"
+  MODEL_ROUTER_PERCENTAGE_LOCAL: "0"
