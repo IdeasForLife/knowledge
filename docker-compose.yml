@@ -1,0 +1,67 @@
+
+services:
+  knowledge:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: knowledge-app
+    ports:
+      - "8080:8080"
+    environment:
+      # Spring配置
+      - SPRING_PROFILES_ACTIVE=docker
+      # 时区设置
+      - TZ=Asia/Shanghai
+      # JVM配置
+      - JAVA_OPTS=-Xmx1g -Xms512m
+    volumes:
+      # 持久化SQLite数据库和上传文件
+      - ./data:/app/data
+      # 可选：挂载配置文件
+      # - ./application.yml:/app/application.yml:ro
+    restart: unless-stopped
+    networks:
+      - knowledge-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # 可选：Qdrant向量数据库服务（如果需要本地运行Qdrant）
+  qdrant:
+    image: qdrant/qdrant:v1.12.5
+    container_name: knowledge-qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - ./qdrant_data:/qdrant/storage
+    restart: unless-stopped
+    networks:
+      - knowledge-network
+
+  # 可选：Ollama服务（如果需要本地运行Ollama）
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   container_name: knowledge-ollama
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ./ollama_data:/root/.ollama
+  #   restart: unless-stopped
+  #   networks:
+  #     - knowledge-network
+
+networks:
+  knowledge-network:
+    driver: bridge
+
+volumes:
+  data:
+    driver: local
+  qdrant_data:
+    driver: local
+  # ollama_data:
+  #   driver: local

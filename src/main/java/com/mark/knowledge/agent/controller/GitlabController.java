@@ -4,7 +4,6 @@ import com.mark.knowledge.agent.service.GitlabService;
 import com.mark.knowledge.gitlab.dto.*;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 
 /**
  * GitLab REST API控制器

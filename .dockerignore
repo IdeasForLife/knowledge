@@ -1,0 +1,61 @@
+# Maven
+target/
+!target/*.jar
+!target/lib/**/*.jar
+!target/classes/**/*.class
+*.jar
+*.war
+*.class
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.settings/
+.project
+.classpath
+.factorypath
+
+# Logs
+*.log
+logs/
+
+# macOS
+.DS_Store
+
+# SQLite
+*.db
+*.sqlite
+*.sqlite3
+knowledge.db*
+
+# 上传文件目录（运行时创建）
+uploads/
+
+# 临时文件
+*.tmp
+*.temp
+*.swp
+*.bak
+*.backup
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Docker
+.dockerignore
+Dockerfile
+docker-compose.yml
+
+# 文档
+*.md
+!README.md
+docs/
+
+# 测试
+test-results/
+*.test
