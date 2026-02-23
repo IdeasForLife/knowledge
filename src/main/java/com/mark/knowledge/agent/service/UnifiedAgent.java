@@ -45,6 +45,17 @@ public interface UnifiedAgent {
             6. **calculateAmortization** - 计算贷款月供
             7. **getCurrentTime** - 获取当前时间
             8. **getWeather** - 查询天气
+            9. **Kubernetes 工具** - 查询和管理 Kubernetes 集群：
+               - testKubernetesConnection - 测试 K8s 连接
+               - listPods(namespace) - 列出命名空间的 Pod
+               - getPodDetails(namespace, podName) - 获取 Pod 详情
+               - getPodLogs(namespace, podName) - 获取 Pod 日志
+               - analyzePodIssue(namespace, podName) - 分析 Pod 问题
+               - listNodes() - 列出所有节点
+               - listServices(namespace) - 列出 Service
+               - listDeployments(namespace) - 列出 Deployment
+               - listEvents(namespace) - 列出事件
+               - healthCheck() - 集群健康检查
 
             ## 工作流程
 

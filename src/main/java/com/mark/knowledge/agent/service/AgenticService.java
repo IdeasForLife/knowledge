@@ -51,6 +51,7 @@ public class AgenticService {
     private final ToolAgent toolAgent;
     private final FinancialToolAgent financialToolAgent;
     private final McpFileService mcpFileService;
+    private final KubernetesService kubernetesService;
     private final ChatMessageRepository chatMessageRepository;
     private final int contextWindowSize;
 
@@ -64,6 +65,7 @@ public class AgenticService {
             ToolAgent toolAgent,
             FinancialToolAgent financialToolAgent,
             McpFileService mcpFileService,
+            KubernetesService kubernetesService,
             ChatMessageRepository chatMessageRepository,
             @Value("${agent.context-window-size:10}") int contextWindowSize) {
         this.defaultChatModel = defaultChatModel;
@@ -72,13 +74,14 @@ public class AgenticService {
         this.toolAgent = toolAgent;
         this.financialToolAgent = financialToolAgent;
         this.mcpFileService = mcpFileService;
+        this.kubernetesService = kubernetesService;
         this.chatMessageRepository = chatMessageRepository;
         this.contextWindowSize = contextWindowSize;
 
         log.info("==========================================");
         log.info("🤖 AgenticService 初始化完成");
         log.info("  模型: {}", defaultChatModel.getClass().getSimpleName());
-        log.info("  工具: 向量检索, 计算, 金融计算, 文件操作");
+        log.info("  工具: 向量检索, 计算, 金融计算, 文件操作, Kubernetes");
         log.info("  记忆: MessageWindowChatMemory (窗口大小: {})", contextWindowSize);
         log.info("==========================================");
     }
@@ -189,7 +192,8 @@ public class AgenticService {
                         vectorSearchTool,
                         toolAgent,
                         financialToolAgent,
-                        mcpFileService
+                        mcpFileService,
+                        kubernetesService
                 )
                 .build();
 

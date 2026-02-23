@@ -106,6 +106,14 @@ logging:
 gitlab:
   url: http://localhost/
   token: glpat-4NEjJtyx02zeK5TD4TBYZ286MQp1OjMH.01.0w0pb89ai
+  webhook-token: glpat-4NEjJtyx02zeK5TD4TBYZ286MQp1OjMH.01.0w0pb89ai
+
+# Kubernetes配置
+kubernetes:
+  api-url: http://localhost:8001
+  api-version: api/v1
+  default-namespace: default
+  read-timeout: 30
 
 # Spring Boot Actuator 配置
 management:

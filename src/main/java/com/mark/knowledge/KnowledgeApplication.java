@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
-@EnableJpaRepositories
+@EnableJpaRepositories(basePackages = {"com.mark.knowledge"})
 @EnableConfigurationProperties
 @ComponentScan(basePackages = {"com.mark.knowledge"})
 public class KnowledgeApplication {

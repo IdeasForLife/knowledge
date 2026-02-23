@@ -25,6 +25,11 @@ public class GitlabConfig {
     private String token;
 
     /**
+     * Webhook 密钥（用于验证 GitLab Webhook 请求）
+     */
+    private String webhookToken;
+
+    /**
      * API版本
      */
     private String apiVersion = "api/v4";

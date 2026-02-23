@@ -51,7 +51,7 @@ kubectl port-forward svc/knowledge 8080:8080 -n knowledge
 # 访问 http://localhost:8080
 ```
 
-#### 方式 3: Ingress (需要先安装 NGINX Ingress Controller)
+#### 方式 3: Ingress (需要先安装 NGINX Ingress Controller)  可选
 
 1. 安装 NGINX Ingress Controller:
 ```bash

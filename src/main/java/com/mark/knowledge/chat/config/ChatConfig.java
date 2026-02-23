@@ -35,7 +35,11 @@ import java.util.Properties;
  * - JPA实体管理器
  */
 @Configuration
-@EnableJpaRepositories(basePackages = "com.mark.knowledge.chat.repository")
+@EnableJpaRepositories(basePackages = {
+    "com.mark.knowledge.chat.repository",
+    "com.mark.knowledge.gitlab.repository",
+    "com.mark.knowledge.rag.repository"
+})
 public class ChatConfig {
 
     private static final Logger log = LoggerFactory.getLogger(ChatConfig.class);
@@ -149,7 +153,11 @@ public class ChatConfig {
 
         LocalContainerEntityManagerFactoryBean emf = new LocalContainerEntityManagerFactoryBean();
         emf.setDataSource(dataSource);
-        emf.setPackagesToScan("com.mark.knowledge.chat.entity", "com.mark.knowledge.rag.entity");
+        emf.setPackagesToScan(
+            "com.mark.knowledge.chat.entity",
+            "com.mark.knowledge.rag.entity",
+            "com.mark.knowledge.gitlab.entity"
+        );
 
         HibernateJpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
         vendorAdapter.setGenerateDdl(true);

@@ -407,6 +407,141 @@ public class GitlabUtil {
         }
     }
 
+    // ==================== CI/CD Pipeline 相关 ====================
+
+    /**
+     * 获取项目的 Pipeline 列表
+     *
+     * @param projectIdOrPath 项目ID或路径
+     * @param ref 分支或标签（可选）
+     * @param status 状态过滤（可选）：success, failed, pending, running
+     * @param perPage 每页数量（默认20）
+     * @return Pipeline 列表
+     */
+    public List<Map<String, Object>> getPipelines(String projectIdOrPath, String ref, String status, Integer perPage) {
+        try {
+            log.debug("获取 Pipeline 列表: {} ref={} status={}", projectIdOrPath, ref, status);
+
+            WebClient.RequestHeadersSpec<?> request = webClient.get()
+                    .uri(uriBuilder -> {
+                        uriBuilder.path("/projects/{id}/pipelines");
+                        if (ref != null) uriBuilder.queryParam("ref", ref);
+                        if (status != null) uriBuilder.queryParam("status", status);
+                        if (perPage != null) uriBuilder.queryParam("per_page", perPage);
+                        else uriBuilder.queryParam("per_page", 20);
+                        return uriBuilder.build(projectIdOrPath);
+                    });
+
+            List<Map<String, Object>> pipelines = request
+                    .retrieve()
+                    .bodyToMono(new ParameterizedTypeReference<List<Map<String, Object>>>() {})
+                    .block();
+
+            log.debug("找到 {} 个 Pipeline", pipelines != null ? pipelines.size() : 0);
+            return pipelines != null ? pipelines : List.of();
+        } catch (Exception e) {
+            log.error("获取 Pipeline 列表失败: {}", projectIdOrPath, e);
+            return List.of();
+        }
+    }
+
+    /**
+     * 获取 MR 的 Pipeline 列表
+     *
+     * @param projectIdOrPath 项目ID或路径
+     * @param mergeRequestIid MR IID
+     * @return Pipeline 列表
+     */
+    public List<Map<String, Object>> getMergeRequestPipelines(String projectIdOrPath, Integer mergeRequestIid) {
+        try {
+            log.debug("获取 MR Pipeline 列表: {} MR iid={}", projectIdOrPath, mergeRequestIid);
+
+            List<Map<String, Object>> pipelines = webClient.get()
+                    .uri("/projects/{id}/merge_requests/{iid}/pipelines", projectIdOrPath, mergeRequestIid)
+                    .retrieve()
+                    .bodyToMono(new ParameterizedTypeReference<List<Map<String, Object>>>() {})
+                    .block();
+
+            log.debug("MR {} 找到 {} 个 Pipeline", mergeRequestIid, pipelines != null ? pipelines.size() : 0);
+            return pipelines != null ? pipelines : List.of();
+        } catch (Exception e) {
+            log.error("获取 MR Pipeline 列表失败: {} MR {}", projectIdOrPath, mergeRequestIid, e);
+            return List.of();
+        }
+    }
+
+    /**
+     * 获取单个 Pipeline 详情
+     *
+     * @param projectIdOrPath 项目ID或路径
+     * @param pipelineId Pipeline ID
+     * @return Pipeline 详情
+     */
+    public Map<String, Object> getPipeline(String projectIdOrPath, Long pipelineId) {
+        try {
+            log.debug("获取 Pipeline 详情: {} Pipeline id={}", projectIdOrPath, pipelineId);
+
+            Map<String, Object> pipeline = webClient.get()
+                    .uri("/projects/{id}/pipelines/{pipeline_id}", projectIdOrPath, pipelineId)
+                    .retrieve()
+                    .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
+                    .block();
+
+            return pipeline;
+        } catch (Exception e) {
+            log.error("获取 Pipeline 详情失败: {} Pipeline {}", projectIdOrPath, pipelineId, e);
+            return null;
+        }
+    }
+
+    /**
+     * 获取 Pipeline 的 Jobs
+     *
+     * @param projectIdOrPath 项目ID或路径
+     * @param pipelineId Pipeline ID
+     * @return Jobs 列表
+     */
+    public List<Map<String, Object>> getPipelineJobs(String projectIdOrPath, Long pipelineId) {
+        try {
+            log.debug("获取 Pipeline Jobs: {} Pipeline id={}", projectIdOrPath, pipelineId);
+
+            List<Map<String, Object>> jobs = webClient.get()
+                    .uri("/projects/{id}/pipelines/{pipeline_id}/jobs", projectIdOrPath, pipelineId)
+                    .retrieve()
+                    .bodyToMono(new ParameterizedTypeReference<List<Map<String, Object>>>() {})
+                    .block();
+
+            return jobs != null ? jobs : List.of();
+        } catch (Exception e) {
+            log.error("获取 Pipeline Jobs 失败: {} Pipeline {}", projectIdOrPath, pipelineId, e);
+            return List.of();
+        }
+    }
+
+    /**
+     * 获取 MR 的详细 diff
+     *
+     * @param projectIdOrPath 项目ID或路径
+     * @param mergeRequestIid MR IID
+     * @return diff 列表
+     */
+    public List<Map<String, Object>> getMergeRequestDiff(String projectIdOrPath, Integer mergeRequestIid) {
+        try {
+            log.debug("获取 MR diff: {} MR iid={}", projectIdOrPath, mergeRequestIid);
+
+            List<Map<String, Object>> diffs = webClient.get()
+                    .uri("/projects/{id}/merge_requests/{iid}/diff", projectIdOrPath, mergeRequestIid)
+                    .retrieve()
+                    .bodyToMono(new ParameterizedTypeReference<List<Map<String, Object>>>() {})
+                    .block();
+
+            return diffs != null ? diffs : List.of();
+        } catch (Exception e) {
+            log.error("获取 MR diff 失败: {} MR {}", projectIdOrPath, mergeRequestIid, e);
+            return List.of();
+        }
+    }
+
     // ==================== 辅助方法 ====================
 
     /**
